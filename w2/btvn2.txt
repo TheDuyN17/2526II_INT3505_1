@@ -1,0 +1,68 @@
+HTTP Status Code là các mã số chuẩn của giao thức HTTP dùng để biểu thị kết quả xử lý của một yêu cầu (request) giữa Client và Server.
+Trong Web Service (đặc biệt là RESTful API), HTTP Status Code đóng vai trò quan trọng:
+
+- Chuẩn hóa giao tiếp giữa Client và Server
+
+- Truyền tải trạng thái xử lý của request
+
+- Tách biệt rõ trạng thái xử lý (status) và dữ liệu trả về (response body)
+
+- Giúp Client quyết định hành vi tiếp theo như: gửi lại request (retry), sửa request, hoặc hiển thị thông báo lỗi
+HTTP Status Code bao gồm 3 chữ số, có dạng XYZ:
+- X: Nhóm trạng thái
+
+- YZ: Mã cụ thể trong nhóm
+Trong HTTP, các mã lỗi thường được chia thành hai nhóm chính:
+
+1. Nhóm 4xx – Lỗi phía Client
+
+Bản chất: Request không hợp lệ, trong khi Server vẫn hoạt động bình thường. Client cần chỉnh sửa request trước khi gửi lại.
+
+Nhóm này thể hiện các lỗi xuất phát từ phía Client.
+
+Một số mã phổ biến:
+
+- 400 Bad Request: Request sai cú pháp, thiếu tham số hoặc dữ liệu không hợp lệ
+
+- 401 Unauthorized: Chưa được xác thực (authentication)
+
+- 403 Forbidden: Không có quyền truy cập vào tài nguyên
+
+- 404 Not Found: Không tìm thấy tài nguyên được yêu cầu
+
+- 405 Method Not Allowed: Sử dụng sai HTTP method
+
+- 409 Conflict: Xung đột dữ liệu
+
+- 422 Unprocessable Entity: Dữ liệu hợp lệ về mặt cú pháp nhưng sai logic nghiệp vụ
+
+ Vai trò của nhóm 4xx:
+
+- Thông báo request không hợp lệ hoặc không đủ điều kiện xử lý
+
+- Giúp Client biết cần chỉnh sửa dữ liệu hoặc quyền truy cập
+
+- Phân định rõ lỗi thuộc về phía gửi request
+
+2. Nhóm 5xx – Lỗi phía Server
+Bản chất: Server không thể xử lý request. Trong trường hợp này, Client không thể tự sửa lỗi.
+
+Nguyên nhân thường do lỗi hệ thống, bug chương trình hoặc dịch vụ phụ trợ gặp sự cố.
+Một số mã phổ biến:
+
+- 500 Internal Server Error: Lỗi nội bộ của hệ thống
+
+- 502 Bad Gateway: Lỗi khi Server trung gian nhận phản hồi không hợp lệ từ server khác
+
+- 503 Service Unavailable: Server tạm thời không thể xử lý request do quá tải hoặc đang bảo trì
+
+Vai trò của nhóm 5xx:
+
+- Thông báo sự cố nội bộ của hệ thống
+
+- Cho phép Client quyết định retry hoặc xử lý ngoại lệ
+
+- Phân biệt rõ lỗi hệ thống với lỗi nghiệp vụ
+Kết luận: Việc sử dụng đúng HTTP Status Code giúp thiết kế API rõ ràng, giảm sự phụ thuộc giữa các thành phần (coupling) 
+và nâng cao tính chuyên nghiệp trong quá trình giao tiếp giữa Client và Server.
+
