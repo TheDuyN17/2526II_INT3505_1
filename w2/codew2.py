@@ -1,4 +1,13 @@
+import logging
+import uuid
 from flask import Flask, request, jsonify
+
+# v4: UUID tự sinh, logging, tìm kiếm theo name/email, phân trang
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
@@ -14,10 +23,8 @@ class User:
 
 
 users = [
-    User("1", "Nguyen The Duy", "theduynguyen27@gmail.com"),
+    User(str(uuid.uuid4()), "Nguyen The Duy", "theduynguyen27@gmail.com"),
 ]
-
-next_id = 2
 
 
 def find_user(uid):
@@ -27,9 +34,7 @@ def find_user(uid):
     return None, None
 
 
-# v3: Thêm validate input — kiểm tra field bắt buộc, kiểm tra email trùng
 def validate_user_data(data, required_fields):
-    """Trả về danh sách lỗi nếu có."""
     errors = []
     for field in required_fields:
         if not data.get(field, "").strip():
@@ -44,7 +49,37 @@ def email_exists(email, exclude_uid=None):
 @app.route("/users", methods=["GET", "POST"])
 def handle_users():
     if request.method == "GET":
-        return jsonify([u.to_json() for u in users]), 200
+        # --- Tìm kiếm theo name hoặc email ---
+        query = request.args.get("q", "").strip().lower()
+        filtered = users
+        if query:
+            filtered = [
+                u for u in users
+                if query in u.name.lower() or query in u.email.lower()
+            ]
+
+        # --- Phân trang ---
+        try:
+            page = max(1, int(request.args.get("page", 1)))
+            per_page = max(1, min(100, int(request.args.get("per_page", 10))))
+        except ValueError:
+            return jsonify({"error": "page and per_page must be integers"}), 400
+
+        total = len(filtered)
+        start = (page - 1) * per_page
+        paged = filtered[start: start + per_page]
+
+        logger.info("GET /users  query=%r  page=%d  total=%d", query, page, total)
+
+        return jsonify({
+            "data": [u.to_json() for u in paged],
+            "pagination": {
+                "page": page,
+                "per_page": per_page,
+                "total": total,
+                "total_pages": max(1, -(-total // per_page)),  # ceil division
+            }
+        }), 200
 
     # POST
     data = request.get_json()
@@ -58,10 +93,10 @@ def handle_users():
     if email_exists(data["email"]):
         return jsonify({"error": "Email already in use"}), 409
 
-    global next_id
-    user = User(str(next_id), data["name"].strip(), data["email"].strip())
-    next_id += 1
+    # UUID tự động sinh — không cần client truyền id
+    user = User(str(uuid.uuid4()), data["name"].strip(), data["email"].strip())
     users.append(user)
+    logger.info("POST /users  created id=%s", user.uid)
     return jsonify(user.to_json()), 201
 
 
@@ -70,6 +105,7 @@ def handle_user_by_id(uid):
     user, index = find_user(uid)
 
     if user is None:
+        logger.warning("User not found: id=%s", uid)
         return jsonify({"error": "User not found"}), 404
 
     if request.method == "GET":
@@ -77,6 +113,7 @@ def handle_user_by_id(uid):
 
     if request.method == "DELETE":
         users.pop(index)
+        logger.info("DELETE /users/%s", uid)
         return "", 204
 
     data = request.get_json()
@@ -90,9 +127,10 @@ def handle_user_by_id(uid):
         if email_exists(data["email"], exclude_uid=uid):
             return jsonify({"error": "Email already in use"}), 409
         users[index] = User(uid, data["name"].strip(), data["email"].strip())
+        logger.info("PUT /users/%s", uid)
         return jsonify(users[index].to_json()), 200
 
-    # PATCH — chỉ cập nhật field được gửi lên
+    # PATCH
     if "email" in data:
         if not data["email"].strip():
             return jsonify({"error": "'email' cannot be empty"}), 422
@@ -103,10 +141,11 @@ def handle_user_by_id(uid):
         if not data["name"].strip():
             return jsonify({"error": "'name' cannot be empty"}), 422
         user.name = data["name"].strip()
+    logger.info("PATCH /users/%s", uid)
     return jsonify(user.to_json()), 200
 
 
 if __name__ == "__main__":
     PORT = 5000
-    print(f"Server running at http://localhost:{PORT}")
-    app.run(port=PORT)
+    logger.info("Server running at http://localhost:%d", PORT)
+    app.run(port=PORT, debug=False)
