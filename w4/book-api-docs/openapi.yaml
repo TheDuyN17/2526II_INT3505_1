@@ -1,0 +1,167 @@
+openapi: 3.0.3
+info:
+  title: Book Management API
+  description: API quản lý sách - Bài tập thực hành Buổi 4
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000/api
+    description: Server phát triển
+
+paths:
+  /books:
+    get:
+      summary: Lấy danh sách tất cả sách
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Book'
+
+    post:
+      summary: Thêm một cuốn sách mới
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookInput'
+      responses:
+        '201':
+          description: Tạo sách thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '400':
+          description: Dữ liệu không hợp lệ
+
+  /books/{id}:
+    get:
+      summary: Lấy thông tin một cuốn sách theo ID
+      parameters:
+        - $ref: '#/components/parameters/BookId'
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      summary: Cập nhật thông tin sách
+      parameters:
+        - $ref: '#/components/parameters/BookId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookInput'
+      responses:
+        '200':
+          description: Cập nhật thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '400':
+          description: Dữ liệu không hợp lệ
+
+    delete:
+      summary: Xóa một cuốn sách
+      parameters:
+        - $ref: '#/components/parameters/BookId'
+      responses:
+        '200':
+          description: Xóa thành công
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  schemas:
+    Book:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: "Lập trình API với Node.js"
+        author:
+          type: string
+          example: "Nguyen Van A"
+        year:
+          type: integer
+          example: 2024
+        genre:
+          type: string
+          example: "Technology"
+
+    BookInput:
+      type: object
+      required:
+        - title
+        - author
+      properties:
+        title:
+          type: string
+          example: "Lập trình API với Node.js"
+        author:
+          type: string
+          example: "Nguyen Van A"
+        year:
+          type: integer
+          example: 2024
+        genre:
+          type: string
+          example: "Technology"
+
+  parameters:
+    BookId:
+      name: id
+      in: path
+      required: true
+      description: ID của cuốn sách
+      schema:
+        type: integer
+        example: 1
+    PageParam:
+      name: page
+      in: query
+      description: Số trang
+      schema:
+        type: integer
+        default: 1
+    LimitParam:
+      name: limit
+      in: query
+      description: Số lượng mỗi trang
+      schema:
+        type: integer
+        default: 10
+
+  responses:
+    NotFound:
+      description: Không tìm thấy tài nguyên
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Resource not found"
