@@ -11,8 +11,13 @@ servers:
 paths:
   /books:
     get:
-      summary: Lấy danh sách tất cả sách
+      summary: Lấy danh sách sách
+      description: Hỗ trợ tìm kiếm, lọc theo thể loại, sắp xếp và phân trang
       parameters:
+        - $ref: '#/components/parameters/SearchParam'
+        - $ref: '#/components/parameters/GenreParam'
+        - $ref: '#/components/parameters/SortByParam'
+        - $ref: '#/components/parameters/SortOrderParam'
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/LimitParam'
       responses:
@@ -21,9 +26,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Book'
+                $ref: '#/components/schemas/BookListResponse'
 
     post:
       summary: Thêm một cuốn sách mới
@@ -41,7 +44,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Book'
         '400':
-          description: Dữ liệu không hợp lệ
+          $ref: '#/components/responses/BadRequest'
 
   /books/{id}:
     get:
@@ -78,7 +81,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '400':
-          description: Dữ liệu không hợp lệ
+          $ref: '#/components/responses/BadRequest'
 
     delete:
       summary: Xóa một cuốn sách
@@ -87,8 +90,42 @@ paths:
       responses:
         '200':
           description: Xóa thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Xóa thành công"
         '404':
           $ref: '#/components/responses/NotFound'
+
+  /books/stats:
+    get:
+      summary: Thống kê sách
+      description: Trả về tổng số sách và số lượng theo từng thể loại
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatsResponse'
+
+  /genres:
+    get:
+      summary: Lấy danh sách thể loại
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example: ["Technology", "Fiction", "Self-help"]
 
 components:
   schemas:
@@ -130,6 +167,41 @@ components:
           type: string
           example: "Technology"
 
+    BookListResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 5
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 10
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Book'
+
+    StatsResponse:
+      type: object
+      properties:
+        total_books:
+          type: integer
+          example: 5
+        by_genre:
+          type: object
+          example:
+            Technology: 3
+            Fiction: 1
+            Self-help: 1
+        genres_list:
+          type: array
+          items:
+            type: string
+          example: ["Technology", "Fiction", "Self-help"]
+
   parameters:
     BookId:
       name: id
@@ -139,6 +211,36 @@ components:
       schema:
         type: integer
         example: 1
+    SearchParam:
+      name: search
+      in: query
+      description: Tìm kiếm theo tên sách hoặc tác giả
+      schema:
+        type: string
+        example: "Python"
+    GenreParam:
+      name: genre
+      in: query
+      description: Lọc theo thể loại
+      schema:
+        type: string
+        example: "Technology"
+    SortByParam:
+      name: sort_by
+      in: query
+      description: Sắp xếp theo trường
+      schema:
+        type: string
+        enum: [title, author, year]
+        example: "year"
+    SortOrderParam:
+      name: sort_order
+      in: query
+      description: Thứ tự sắp xếp
+      schema:
+        type: string
+        enum: [asc, desc]
+        default: asc
     PageParam:
       name: page
       in: query
@@ -165,3 +267,13 @@ components:
               message:
                 type: string
                 example: "Resource not found"
+    BadRequest:
+      description: Dữ liệu không hợp lệ
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "title và author là bắt buộc"
