@@ -1,0 +1,124 @@
+#%RAML 1.0
+title: Library Management API
+description: API quản lý thư viện - Demo RAML format
+version: 1.0.0
+baseUri: http://localhost:3000/api
+mediaType: application/json
+
+types:
+  Book:
+    type: object
+    properties:
+      id:
+        type: integer
+        example: 1
+      title:
+        type: string
+        example: "Clean Code"
+      author:
+        type: string
+        example: "Robert C. Martin"
+      year:
+        type: integer
+        example: 2008
+      genre:
+        type: string
+        example: "Technology"
+      available:
+        type: boolean
+        example: true
+
+  BookInput:
+    type: object
+    properties:
+      title:
+        type: string
+        required: true
+      author:
+        type: string
+        required: true
+      year:
+        type: integer
+        required: false
+      genre:
+        type: string
+        required: false
+
+  Error:
+    type: object
+    properties:
+      message:
+        type: string
+
+traits:
+  searchable:
+    queryParameters:
+      search:
+        type: string
+        required: false
+        description: Tìm kiếm theo tên sách hoặc tác giả
+      genre:
+        type: string
+        required: false
+        description: Lọc theo thể loại
+
+/books:
+  get:
+    description: Lấy danh sách sách
+    is: [searchable]
+    responses:
+      200:
+        body:
+          type: Book[]
+
+  post:
+    description: Thêm sách mới
+    body:
+      type: BookInput
+    responses:
+      201:
+        body:
+          type: Book
+      400:
+        body:
+          type: Error
+
+  /{id}:
+    uriParameters:
+      id:
+        type: integer
+        description: ID của cuốn sách
+
+    get:
+      description: Lấy sách theo ID
+      responses:
+        200:
+          body:
+            type: Book
+        404:
+          body:
+            type: Error
+
+    put:
+      description: Cập nhật sách
+      body:
+        type: BookInput
+      responses:
+        200:
+          body:
+            type: Book
+        404:
+          body:
+            type: Error
+
+    delete:
+      description: Xóa sách
+      responses:
+        200:
+          body:
+            properties:
+              message:
+                type: string
+        404:
+          body:
+            type: Error

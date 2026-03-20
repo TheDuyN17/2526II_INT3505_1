@@ -1,0 +1,115 @@
+FORMAT: 1A
+HOST: http://localhost:3000/api
+
+# Library Management API
+
+API quản lý thư viện - Demo API Blueprint format.
+
+## Books Collection [/books]
+
+### Lấy danh sách sách [GET]
+
++ Parameters
+    + search (string, optional) - Tìm kiếm theo tên hoặc tác giả
+    + genre (string, optional) - Lọc theo thể loại
+
++ Response 200 (application/json)
+
+        [
+            {
+                "id": 1,
+                "title": "Clean Code",
+                "author": "Robert C. Martin",
+                "year": 2008,
+                "genre": "Technology",
+                "available": true
+            }
+        ]
+
+### Thêm sách mới [POST]
+
++ Request (application/json)
+
+        {
+            "title": "Clean Code",
+            "author": "Robert C. Martin",
+            "year": 2008,
+            "genre": "Technology"
+        }
+
++ Response 201 (application/json)
+
+        {
+            "id": 1,
+            "title": "Clean Code",
+            "author": "Robert C. Martin",
+            "year": 2008,
+            "genre": "Technology",
+            "available": true
+        }
+
++ Response 400 (application/json)
+
+        {
+            "message": "title và author là bắt buộc"
+        }
+
+## Book [/books/{id}]
+
++ Parameters
+    + id (number, required) - ID của cuốn sách
+
+### Lấy sách theo ID [GET]
+
++ Response 200 (application/json)
+
+        {
+            "id": 1,
+            "title": "Clean Code",
+            "author": "Robert C. Martin",
+            "year": 2008,
+            "genre": "Technology",
+            "available": true
+        }
+
++ Response 404 (application/json)
+
+        {
+            "message": "Resource not found"
+        }
+
+### Cập nhật sách [PUT]
+
++ Request (application/json)
+
+        {
+            "title": "Clean Code 2nd Edition",
+            "author": "Robert C. Martin",
+            "year": 2024,
+            "genre": "Technology"
+        }
+
++ Response 200 (application/json)
+
+        {
+            "id": 1,
+            "title": "Clean Code 2nd Edition",
+            "author": "Robert C. Martin",
+            "year": 2024,
+            "genre": "Technology",
+            "available": true
+        }
+
+### Xóa sách [DELETE]
+
++ Response 200 (application/json)
+
+        {
+            "message": "Xóa thành công"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "message": "Resource not found"
+        }

@@ -1,0 +1,192 @@
+openapi: 3.0.3
+info:
+  title: Library Management API
+  description: API quản lý thư viện - Demo OpenAPI format
+  version: 1.0.0
+
+servers:
+  - url: https://library-api-xxxx.onrender.com/api
+    description: Server production (Render)
+  - url: http://localhost:3000/api
+    description: Server phát triển
+
+paths:
+  /books:
+    get:
+      summary: Lấy danh sách sách
+      description: Hỗ trợ tìm kiếm và lọc theo thể loại
+      parameters:
+        - name: search
+          in: query
+          description: Tìm kiếm theo tên sách hoặc tác giả
+          schema:
+            type: string
+            example: "Clean"
+        - name: genre
+          in: query
+          description: Lọc theo thể loại
+          schema:
+            type: string
+            example: "Technology"
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Book'
+
+    post:
+      summary: Thêm sách mới
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookInput'
+      responses:
+        '201':
+          description: Tạo thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '400':
+          description: Dữ liệu không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /books/{id}:
+    get:
+      summary: Lấy sách theo ID
+      parameters:
+        - $ref: '#/components/parameters/BookId'
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '404':
+          description: Không tìm thấy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Cập nhật sách
+      parameters:
+        - $ref: '#/components/parameters/BookId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookInput'
+      responses:
+        '200':
+          description: Cập nhật thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '404':
+          description: Không tìm thấy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '400':
+          description: Dữ liệu không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Xóa sách
+      parameters:
+        - $ref: '#/components/parameters/BookId'
+      responses:
+        '200':
+          description: Xóa thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Xóa thành công"
+        '404':
+          description: Không tìm thấy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Book:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: "Clean Code"
+        author:
+          type: string
+          example: "Robert C. Martin"
+        year:
+          type: integer
+          example: 2008
+        genre:
+          type: string
+          example: "Technology"
+        available:
+          type: boolean
+          example: true
+
+    BookInput:
+      type: object
+      required:
+        - title
+        - author
+      properties:
+        title:
+          type: string
+          example: "Clean Code"
+        author:
+          type: string
+          example: "Robert C. Martin"
+        year:
+          type: integer
+          example: 2008
+        genre:
+          type: string
+          example: "Technology"
+
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Resource not found"
+
+  parameters:
+    BookId:
+      name: id
+      in: path
+      required: true
+      description: ID của cuốn sách
+      schema:
+        type: integer
+        example: 1
