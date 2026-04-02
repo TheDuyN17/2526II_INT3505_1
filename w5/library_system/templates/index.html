@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Library System - Quản lý thư viện</title>
+<style>
+  :root {
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --success: #16a34a;
+    --danger: #dc2626;
+    --warning: #d97706;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --text: #1e293b;
+    --text-muted: #64748b;
+    --code-bg: #0f172a;
+    --code-text: #e2e8f0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); }
+
+  /* Header */
+  header {
+    background: linear-gradient(135deg, #1e40af, #3b82f6);
+    color: white; padding: 2rem;
+    box-shadow: 0 4px 20px rgba(37,99,235,.3);
+  }
+  header h1 { font-size: 1.8rem; margin-bottom: .3rem; }
+  header p { opacity: .85; font-size: .95rem; }
+
+  /* Layout */
+  .container { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
+  .grid { display: grid; grid-template-columns: 280px 1fr; gap: 1.5rem; align-items: start; }
+
+  /* Sidebar */
+  .sidebar { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; position: sticky; top: 1rem; }
+  .sidebar-title { background: #f1f5f9; padding: .75rem 1rem; font-weight: 600; font-size: .85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
+  .nav-item { display: block; padding: .6rem 1rem; font-size: .9rem; cursor: pointer; border-left: 3px solid transparent; transition: all .15s; text-decoration: none; color: var(--text); }
+  .nav-item:hover { background: #f1f5f9; border-left-color: var(--primary); color: var(--primary); }
+  .nav-item.active { background: #eff6ff; border-left-color: var(--primary); color: var(--primary); font-weight: 500; }
+  .nav-badge { float: right; background: var(--primary); color: white; font-size: .7rem; padding: .1rem .4rem; border-radius: 999px; }
+
+  /* Cards */
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 1.5rem; }
+  .card-header { padding: 1rem 1.25rem; background: #f8fafc; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: .5rem; }
+  .card-header h2 { font-size: 1rem; font-weight: 600; }
+  .method-badge { font-size: .75rem; font-weight: 700; padding: .2rem .5rem; border-radius: 4px; font-family: monospace; }
+  .GET { background: #dcfce7; color: #166534; }
+  .POST { background: #dbeafe; color: #1e40af; }
+  .PUT { background: #fef9c3; color: #854d0e; }
+  .DELETE { background: #fee2e2; color: #991b1b; }
+  .card-body { padding: 1.25rem; }
+
+  /* Forms */
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: .75rem; }
+  label { display: block; font-size: .8rem; font-weight: 500; color: var(--text-muted); margin-bottom: .25rem; }
+  input, select { width: 100%; padding: .5rem .75rem; border: 1px solid var(--border); border-radius: 6px; font-size: .875rem; color: var(--text); background: white; transition: border-color .15s; }
+  input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+
+  /* Buttons */
+  .btn { padding: .5rem 1rem; border: none; border-radius: 6px; font-size: .875rem; font-weight: 500; cursor: pointer; transition: all .15s; }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-success { background: var(--success); color: white; }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-warning { background: var(--warning); color: white; }
+  .btn-sm { padding: .3rem .6rem; font-size: .8rem; }
+
+  /* Code block */
+  .code-block { background: var(--code-bg); color: var(--code-text); border-radius: 8px; padding: 1rem; font-family: 'Courier New', monospace; font-size: .82rem; overflow-x: auto; white-space: pre-wrap; word-break: break-all; max-height: 400px; overflow-y: auto; }
+  .code-block .key { color: #93c5fd; }
+  .code-block .string { color: #86efac; }
+  .code-block .number { color: #fcd34d; }
+  .code-block .bool { color: #f9a8d4; }
+
+  /* Pagination tabs */
+  .tab-bar { display: flex; gap: .5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+  .tab { padding: .4rem .85rem; border: 1px solid var(--border); border-radius: 6px; font-size: .85rem; cursor: pointer; background: white; transition: all .15s; }
+  .tab.active { background: var(--primary); color: white; border-color: var(--primary); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Book table */
+  table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+  th { background: #f1f5f9; padding: .6rem .75rem; text-align: left; font-weight: 600; color: var(--text-muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; }
+  td { padding: .6rem .75rem; border-bottom: 1px solid #f1f5f9; }
+  tr:hover td { background: #f8fafc; }
+  .available-yes { color: var(--success); font-weight: 500; }
+  .available-no { color: var(--danger); font-weight: 500; }
+  .rating { background: #fef3c7; color: #92400e; padding: .1rem .35rem; border-radius: 4px; font-size: .78rem; font-weight: 600; }
+
+  /* Pagination nav */
+  .pagination-nav { display: flex; gap: .4rem; align-items: center; flex-wrap: wrap; padding-top: .75rem; border-top: 1px solid var(--border); margin-top: .75rem; }
+  .page-btn { padding: .35rem .7rem; border: 1px solid var(--border); border-radius: 5px; background: white; font-size: .82rem; cursor: pointer; transition: all .15s; }
+  .page-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
+  .page-btn:disabled { opacity: .4; cursor: not-allowed; }
+  .page-info { font-size: .82rem; color: var(--text-muted); }
+
+  /* Status */
+  .status-bar { display: flex; align-items: center; gap: .5rem; margin-bottom: 1rem; font-size: .85rem; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+  .response-time { color: var(--text-muted); font-size: .8rem; }
+
+  /* Alert */
+  .alert { padding: .75rem 1rem; border-radius: 6px; margin-bottom: 1rem; font-size: .875rem; }
+  .alert-success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+  .alert-error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+  .hidden { display: none; }
+
+  /* Comparison table */
+  .compare-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+  .compare-table th, .compare-table td { padding: .7rem 1rem; border: 1px solid var(--border); vertical-align: top; }
+  .compare-table th { background: #f1f5f9; }
+  .compare-table .pro { color: var(--success); }
+  .compare-table .con { color: var(--danger); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📚 Library Management System</h1>
+  <p>Flask REST API · 3 kiểu phân trang · HATEOAS · Search & Filter</p>
+</header>
+
+<div class="container">
+  <div class="grid">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-title">Navigation</div>
+      <a class="nav-item active" onclick="showSection('books')">📖 Danh sách sách <span class="nav-badge">25</span></a>
+      <a class="nav-item" onclick="showSection('create')">➕ Thêm sách</a>
+      <a class="nav-item" onclick="showSection('detail')">🔍 Chi tiết sách</a>
+      <a class="nav-item" onclick="showSection('update')">✏️ Cập nhật sách</a>
+      <a class="nav-item" onclick="showSection('delete')">🗑️ Xóa sách</a>
+      <a class="nav-item" onclick="showSection('stats')">📊 Thống kê</a>
+      <a class="nav-item" onclick="showSection('genres')">🏷️ Thể loại</a>
+      <a class="nav-item" onclick="showSection('compare')">⚖️ So sánh phân trang</a>
+    </aside>
+
+    <!-- Main content -->
+    <main>
+
+      <!-- SECTION: Books List -->
+      <div id="section-books">
+        <div class="card">
+          <div class="card-header">
+            <span class="method-badge GET">GET</span>
+            <h2>/api/books — Danh sách & Phân trang</h2>
+          </div>
+          <div class="card-body">
+
+            <!-- Pagination type tabs -->
+            <div class="tab-bar">
+              <button class="tab active" onclick="switchTab('page')">📄 Page-Based</button>
+              <button class="tab" onclick="switchTab('offset')">📍 Offset-Limit</button>
+              <button class="tab" onclick="switchTab('cursor')">🔗 Cursor-Based</button>
+            </div>
+
+            <!-- Page-Based -->
+            <div id="tab-page" class="tab-content active">
+              <div class="form-grid">
+                <div><label>Tìm kiếm (q)</label><input id="p-q" placeholder="Tên sách hoặc tác giả..."></div>
+                <div><label>Thể loại</label><select id="p-genre"><option value="">Tất cả</option><option>Thiếu nhi</option><option>Tiểu thuyết</option><option>Truyện ngắn</option><option>Thơ</option><option>Kỹ năng sống</option><option>Lịch sử</option><option>Phiêu lưu</option></select></div>
+                <div><label>Sắp xếp theo</label><select id="p-sort"><option value="id">ID</option><option value="title">Tên sách</option><option value="author">Tác giả</option><option value="year">Năm</option><option value="rating">Đánh giá</option></select></div>
+                <div><label>Thứ tự</label><select id="p-order"><option value="asc">Tăng dần</option><option value="desc">Giảm dần</option></select></div>
+                <div><label>Trang</label><input id="p-page" type="number" value="1" min="1"></div>
+                <div><label>Số sách/trang</label><input id="p-perpage" type="number" value="5" min="1" max="50"></div>
+              </div>
+              <br>
+              <button class="btn btn-primary" onclick="fetchBooks('page')">🔍 Tìm kiếm</button>
+            </div>
+
+            <!-- Offset-Limit -->
+            <div id="tab-offset" class="tab-content">
+              <div class="form-grid">
+                <div><label>Tìm kiếm (q)</label><input id="o-q" placeholder="Tên sách hoặc tác giả..."></div>
+                <div><label>Thể loại</label><select id="o-genre"><option value="">Tất cả</option><option>Thiếu nhi</option><option>Tiểu thuyết</option><option>Truyện ngắn</option><option>Thơ</option><option>Kỹ năng sống</option><option>Lịch sử</option><option>Phiêu lưu</option></select></div>
+                <div><label>Offset (bỏ qua)</label><input id="o-offset" type="number" value="0" min="0"></div>
+                <div><label>Limit (lấy tối đa)</label><input id="o-limit" type="number" value="5" min="1" max="50"></div>
+              </div>
+              <br>
+              <button class="btn btn-primary" onclick="fetchBooks('offset')">🔍 Tìm kiếm</button>
+            </div>
+
+            <!-- Cursor-Based -->
+            <div id="tab-cursor" class="tab-content">
+              <div class="form-grid">
+                <div><label>Tìm kiếm (q)</label><input id="c-q" placeholder="Tên sách hoặc tác giả..."></div>
+                <div><label>Limit</label><input id="c-limit" type="number" value="5" min="1" max="50"></div>
+                <div><label>Cursor (để trống = đầu)</label><input id="c-cursor" placeholder="Để trống để bắt đầu từ đầu"></div>
+              </div>
+              <br>
+              <button class="btn btn-primary" onclick="fetchBooks('cursor')">🔍 Tìm kiếm</button>
+              <button class="btn btn-warning btn-sm" onclick="document.getElementById('c-cursor').value=''; fetchBooks('cursor')">⏮ Reset về đầu</button>
+            </div>
+
+            <!-- Results -->
+            <div id="alert-books" class="alert hidden"></div>
+            <div class="status-bar hidden" id="status-bar">
+              <div class="dot"></div>
+              <span id="status-text">Đang tải...</span>
+              <span class="response-time" id="response-time"></span>
+            </div>
+            <div id="books-result"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION: Create -->
+      <div id="section-create" class="hidden">
+        <div class="card">
+          <div class="card-header">
+            <span class="method-badge POST">POST</span>
+            <h2>/api/books — Thêm sách mới</h2>
+          </div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div><label>Tên sách *</label><input id="c-title" placeholder="Tên sách"></div>
+              <div><label>Tác giả *</label><input id="c-author" placeholder="Tác giả"></div>
+              <div><label>Thể loại *</label><input id="c-genre" placeholder="Thể loại"></div>
+              <div><label>Năm xuất bản *</label><input id="c-year" type="number" placeholder="2024"></div>
+              <div><label>Số trang *</label><input id="c-pages" type="number" placeholder="200"></div>
+              <div><label>Đánh giá</label><input id="c-rating" type="number" step="0.1" min="0" max="5" placeholder="4.5"></div>
+              <div><label>ISBN</label><input id="c-isbn" placeholder="978-..."></div>
+              <div><label>Có sẵn</label><select id="c-available"><option value="true">Có</option><option value="false">Không</option></select></div>
+            </div>
+            <br>
+            <button class="btn btn-success" onclick="createBook()">➕ Thêm sách</button>
+            <div id="alert-create" class="alert hidden" style="margin-top:.75rem"></div>
+            <div id="create-result"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION: Detail -->
+      <div id="section-detail" class="hidden">
+        <div class="card">
+          <div class="card-header">
+            <span class="method-badge GET">GET</span>
+            <h2>/api/books/&lt;id&gt; — Chi tiết sách</h2>
+          </div>
+          <div class="card-body">
+            <div style="display:flex;gap:.75rem;align-items:flex-end">
+              <div style="flex:1"><label>Book ID</label><input id="d-id" type="number" placeholder="1" value="1"></div>
+              <button class="btn btn-primary" onclick="getBook()">🔍 Xem chi tiết</button>
+            </div>
+            <div id="alert-detail" class="alert hidden" style="margin-top:.75rem"></div>
+            <div id="detail-result"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION: Update -->
+      <div id="section-update" class="hidden">
+        <div class="card">
+          <div class="card-header">
+            <span class="method-badge PUT">PUT</span>
+            <h2>/api/books/&lt;id&gt; — Cập nhật sách</h2>
+          </div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div><label>Book ID *</label><input id="u-id" type="number" placeholder="1" value="1"></div>
+              <div><label>Tên sách</label><input id="u-title" placeholder="Tên mới (bỏ trống = giữ nguyên)"></div>
+              <div><label>Tác giả</label><input id="u-author" placeholder="Tác giả mới"></div>
+              <div><label>Thể loại</label><input id="u-genre" placeholder="Thể loại mới"></div>
+              <div><label>Năm</label><input id="u-year" type="number" placeholder="Năm mới"></div>
+              <div><label>Đánh giá</label><input id="u-rating" type="number" step="0.1" min="0" max="5" placeholder="Rating mới"></div>
+              <div><label>Có sẵn</label><select id="u-available"><option value="">-- Giữ nguyên --</option><option value="true">Có</option><option value="false">Không</option></select></div>
+            </div>
+            <br>
+            <button class="btn btn-warning" onclick="updateBook()">✏️ Cập nhật</button>
+            <div id="alert-update" class="alert hidden" style="margin-top:.75rem"></div>
+            <div id="update-result"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION: Delete -->
+      <div id="section-delete" class="hidden">
+        <div class="card">
+          <div class="card-header">
+            <span class="method-badge DELETE">DELETE</span>
+            <h2>/api/books/&lt;id&gt; — Xóa sách</h2>
+          </div>
+          <div class="card-body">
+            <div style="display:flex;gap:.75rem;align-items:flex-end">
+              <div style="flex:1"><label>Book ID</label><input id="del-id" type="number" placeholder="1" value="1"></div>
+              <button class="btn btn-danger" onclick="deleteBook()">🗑️ Xóa sách</button>
+            </div>
+            <div id="alert-delete" class="alert hidden" style="margin-top:.75rem"></div>
+            <div id="delete-result"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION: Stats -->
+      <div id="section-stats" class="hidden">
+        <div class="card">
+          <div class="card-header">
+            <span class="method-badge GET">GET</span>
+            <h2>/api/books/stats — Thống kê</h2>
+          </div>
+          <div class="card-body">
+            <button class="btn btn-primary" onclick="fetchStats()">📊 Tải thống kê</button>
+            <div id="stats-result" style="margin-top:1rem"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION: Genres -->
+      <div id="section-genres" class="hidden">
+        <div class="card">
+          <div class="card-header">
+            <span class="method-badge GET">GET</span>
+            <h2>/api/books/genres — Danh sách thể loại</h2>
+          </div>
+          <div class="card-body">
+            <button class="btn btn-primary" onclick="fetchGenres()">🏷️ Tải thể loại</button>
+            <div id="genres-result" style="margin-top:1rem"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION: Compare -->
+      <div id="section-compare" class="hidden">
+        <div class="card">
+          <div class="card-header">
+            <h2>⚖️ So sánh 3 kiểu phân trang</h2>
+          </div>
+          <div class="card-body">
+            <table class="compare-table">
+              <tr>
+                <th>Tiêu chí</th>
+                <th>📄 Page-Based</th>
+                <th>📍 Offset-Limit</th>
+                <th>🔗 Cursor-Based</th>
+              </tr>
+              <tr>
+                <td><strong>Query params</strong></td>
+                <td><code>?page=2&per_page=5</code></td>
+                <td><code>?offset=10&limit=5</code></td>
+                <td><code>?cursor=abc&limit=5</code></td>
+              </tr>
+              <tr>
+                <td><strong>SQL tương đương</strong></td>
+                <td><code>LIMIT 5 OFFSET 5</code></td>
+                <td><code>LIMIT 5 OFFSET 10</code></td>
+                <td><code>WHERE id > 5 ORDER BY id LIMIT 6</code></td>
+              </tr>
+              <tr>
+                <td><strong>Hiệu suất</strong></td>
+                <td class="con">O(n) — chậm khi trang lớn</td>
+                <td class="con">O(n) — chậm khi offset lớn</td>
+                <td class="pro">O(log n) — dùng index, luôn nhanh</td>
+              </tr>
+              <tr>
+                <td><strong>Nhảy trang tự do</strong></td>
+                <td class="pro">✅ Có thể nhảy bất kỳ trang</td>
+                <td class="pro">✅ Có thể nhảy bất kỳ row</td>
+                <td class="con">❌ Chỉ next/prev</td>
+              </tr>
+              <tr>
+                <td><strong>Ổn định khi có insert/delete</strong></td>
+                <td class="con">❌ Dữ liệu có thể bị lệch</td>
+                <td class="con">❌ Dữ liệu có thể bị lệch</td>
+                <td class="pro">✅ Luôn ổn định</td>
+              </tr>
+              <tr>
+                <td><strong>Thân thiện người dùng</strong></td>
+                <td class="pro">✅ Trang 1, 2, 3... dễ hiểu</td>
+                <td>⚠️ Kỹ thuật hơn</td>
+                <td class="con">❌ Không hiển thị "trang X/Y"</td>
+              </tr>
+              <tr>
+                <td><strong>Real-world use case</strong></td>
+                <td>Google Search, Shopee, blog posts</td>
+                <td>Data export, analytics, admin panels</td>
+                <td>Twitter/X feed, Tiktok, infinite scroll</td>
+              </tr>
+              <tr>
+                <td><strong>Scale với big data</strong></td>
+                <td class="con">❌ Kém</td>
+                <td class="con">❌ Kém</td>
+                <td class="pro">✅ Xuất sắc</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script>
+const API = '/api';
+
+// ── Navigation ──────────────────────────────────────────
+function showSection(name) {
+  document.querySelectorAll('[id^="section-"]').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('section-' + name).classList.remove('hidden');
+  event.currentTarget.classList.add('active');
+}
+
+// ── Tabs ────────────────────────────────────────────────
+let currentTab = 'page';
+function switchTab(name) {
+  currentTab = name;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  document.getElementById('books-result').innerHTML = '';
+}
+
+// ── JSON formatter ───────────────────────────────────────
+function formatJSON(obj) {
+  const json = JSON.stringify(obj, null, 2);
+  return json.replace(/"([^"]+)":/g, '<span class="key">"$1"</span>:')
+             .replace(/: "([^"]*)"/g, ': <span class="string">"$1"</span>')
+             .replace(/: (\d+\.?\d*)/g, ': <span class="number">$1</span>')
+             .replace(/: (true|false)/g, ': <span class="bool">$1</span>');
+}
+
+function showAlert(id, msg, type) {
+  const el = document.getElementById(id);
+  el.className = 'alert alert-' + type;
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
+// ── Fetch books ──────────────────────────────────────────
+async function fetchBooks(type) {
+  const statusBar = document.getElementById('status-bar');
+  const statusText = document.getElementById('status-text');
+  const responseTimeEl = document.getElementById('response-time');
+  statusBar.classList.remove('hidden');
+  statusText.textContent = 'Đang tải...';
+
+  let url = API + '/books?';
+  const t0 = performance.now();
+
+  if (type === 'page') {
+    const q = document.getElementById('p-q').value;
+    const genre = document.getElementById('p-genre').value;
+    const sort = document.getElementById('p-sort').value;
+    const order = document.getElementById('p-order').value;
+    const page = document.getElementById('p-page').value;
+    const perPage = document.getElementById('p-perpage').value;
+    const params = new URLSearchParams({ page, per_page: perPage, sort_by: sort, order });
+    if (q) params.set('q', q);
+    if (genre) params.set('genre', genre);
+    url += params;
+
+  } else if (type === 'offset') {
+    const q = document.getElementById('o-q').value;
+    const genre = document.getElementById('o-genre').value;
+    const offset = document.getElementById('o-offset').value;
+    const limit = document.getElementById('o-limit').value;
+    const params = new URLSearchParams({ offset, limit });
+    if (q) params.set('q', q);
+    if (genre) params.set('genre', genre);
+    url += params;
+
+  } else { // cursor
+    const q = document.getElementById('c-q').value;
+    const limit = document.getElementById('c-limit').value;
+    const cursor = document.getElementById('c-cursor').value;
+    const params = new URLSearchParams({ limit });
+    if (q) params.set('q', q);
+    if (cursor) params.set('cursor', cursor);
+    url += params;
+  }
+
+  try {
+    const res = await fetch(url);
+    const elapsed = Math.round(performance.now() - t0);
+    const data = await res.json();
+    responseTimeEl.textContent = `(${elapsed}ms)`;
+    statusText.textContent = `Tìm thấy ${data.data?.length || 0} kết quả`;
+
+    renderBooksTable(data, type);
+  } catch (e) {
+    showAlert('alert-books', 'Lỗi: ' + e.message, 'error');
+    statusBar.classList.add('hidden');
+  }
+}
+
+function renderBooksTable(data, type) {
+  const books = data.data || [];
+  const meta = data.meta || {};
+  const links = data._links || {};
+
+  let html = '';
+
+  if (books.length === 0) {
+    html = '<div class="alert" style="background:#f1f5f9;margin-top:.75rem">Không tìm thấy sách nào.</div>';
+  } else {
+    html += `<div style="margin-top:.75rem;margin-bottom:.5rem;font-size:.82rem;color:var(--text-muted)">
+      <strong>Kiểu phân trang:</strong> <code>${meta.pagination_type}</code>
+    </div>`;
+    html += '<table><thead><tr><th>ID</th><th>Tên sách</th><th>Tác giả</th><th>Thể loại</th><th>Năm</th><th>Đánh giá</th><th>Có sẵn</th></tr></thead><tbody>';
+    for (const b of books) {
+      html += `<tr>
+        <td>${b.id}</td>
+        <td><strong>${b.title}</strong></td>
+        <td>${b.author}</td>
+        <td>${b.genre}</td>
+        <td>${b.year}</td>
+        <td><span class="rating">⭐ ${b.rating}</span></td>
+        <td class="${b.available ? 'available-yes' : 'available-no'}">${b.available ? '✅ Có' : '❌ Mượn'}</td>
+      </tr>`;
+    }
+    html += '</tbody></table>';
+    // Pagination nav
+    html += '<div class="pagination-nav">';
+    if (type === 'page') {
+      html += `<span class="page-info">Trang ${meta.page}/${meta.total_pages} · ${meta.total_items} sách</span>`;
+      if (links.prev) html += `<button class="page-btn" onclick="navigatePage('${links.prev}','page')">◀ Trước</button>`;
+      if (links.next) html += `<button class="page-btn" onclick="navigatePage('${links.next}','page')">Tiếp ▶</button>`;
+    } else if (type === 'offset') {
+      html += `<span class="page-info">Offset ${meta.offset} · ${meta.total_items} sách</span>`;
+      if (links.prev) html += `<button class="page-btn" onclick="navigatePage('${links.prev}','offset')">◀ Trước</button>`;
+      if (links.next) html += `<button class="page-btn" onclick="navigatePage('${links.next}','offset')">Tiếp ▶</button>`;
+    } else {
+      html += `<span class="page-info">Cursor-based · ${meta.count} sách</span>`;
+      if (meta.next_cursor) {
+        html += `<button class="page-btn" onclick="useCursor('${meta.next_cursor}')">Tiếp ▶</button>`;
+      } else {
+        html += `<span class="page-info">— Hết danh sách —</span>`;
+      }
+    }
+    html += '</div>';
+  }
+
+  // Raw JSON toggle
+  html += `<details style="margin-top:.75rem"><summary style="cursor:pointer;font-size:.82rem;color:var(--text-muted)">Xem raw JSON response</summary>
+    <div class="code-block" style="margin-top:.5rem">${formatJSON(data)}</div>
+  </details>`;
+
+  document.getElementById('books-result').innerHTML = html;
+  document.getElementById('alert-books').classList.add('hidden');
+}
+
+async function navigatePage(url, type) {
+  // Parse params from URL and update inputs
+  const u = new URL(url);
+  if (type === 'page') {
+    document.getElementById('p-page').value = u.searchParams.get('page') || 1;
+    document.getElementById('p-perpage').value = u.searchParams.get('per_page') || 5;
+  } else if (type === 'offset') {
+    document.getElementById('o-offset').value = u.searchParams.get('offset') || 0;
+    document.getElementById('o-limit').value = u.searchParams.get('limit') || 5;
+  }
+  await fetchBooks(type);
+}
+
+function useCursor(cursor) {
+  document.getElementById('c-cursor').value = cursor;
+  fetchBooks('cursor');
+}
+
+// ── Get single book ──────────────────────────────────────
+async function getBook() {
+  const id = document.getElementById('d-id').value;
+  if (!id) return showAlert('alert-detail', 'Vui lòng nhập ID', 'error');
+  try {
+    const res = await fetch(`${API}/books/${id}`);
+    const data = await res.json();
+    if (!res.ok) return showAlert('alert-detail', data.message, 'error');
+    document.getElementById('alert-detail').classList.add('hidden');
+    document.getElementById('detail-result').innerHTML =
+      `<div class="code-block" style="margin-top:.75rem">${formatJSON(data)}</div>`;
+  } catch (e) {
+    showAlert('alert-detail', e.message, 'error');
+  }
+}
+
+// ── Create book ──────────────────────────────────────────
+async function createBook() {
+  const body = {
+    title: document.getElementById('c-title').value,
+    author: document.getElementById('c-author').value,
+    genre: document.getElementById('c-genre').value,
+    year: parseInt(document.getElementById('c-year').value),
+    pages: parseInt(document.getElementById('c-pages').value),
+    rating: parseFloat(document.getElementById('c-rating').value) || 0,
+    isbn: document.getElementById('c-isbn').value,
+    available: document.getElementById('c-available').value === 'true',
+  };
+  try {
+    const res = await fetch(`${API}/books`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!res.ok) return showAlert('alert-create', data.message, 'error');
+    showAlert('alert-create', `✅ Đã thêm sách "${data.title}" (ID: ${data.id})`, 'success');
+    document.getElementById('create-result').innerHTML =
+      `<div class="code-block" style="margin-top:.75rem">${formatJSON(data)}</div>`;
+  } catch (e) {
+    showAlert('alert-create', e.message, 'error');
+  }
+}
+
+// ── Update book ──────────────────────────────────────────
+async function updateBook() {
+  const id = document.getElementById('u-id').value;
+  if (!id) return showAlert('alert-update', 'Vui lòng nhập ID', 'error');
+  const body = {};
+  ['title','author','genre'].forEach(f => { const v = document.getElementById('u-'+f).value; if(v) body[f] = v; });
+  ['year'].forEach(f => { const v = document.getElementById('u-'+f).value; if(v) body[f] = parseInt(v); });
+  const rating = document.getElementById('u-rating').value;
+  if (rating) body.rating = parseFloat(rating);
+  const avail = document.getElementById('u-available').value;
+  if (avail !== '') body.available = avail === 'true';
+
+  try {
+    const res = await fetch(`${API}/books/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!res.ok) return showAlert('alert-update', data.message, 'error');
+    showAlert('alert-update', `✅ Đã cập nhật sách "${data.title}"`, 'success');
+    document.getElementById('update-result').innerHTML =
+      `<div class="code-block" style="margin-top:.75rem">${formatJSON(data)}</div>`;
+  } catch (e) {
+    showAlert('alert-update', e.message, 'error');
+  }
+}
+
+// ── Delete book ──────────────────────────────────────────
+async function deleteBook() {
+  const id = document.getElementById('del-id').value;
+  if (!id) return showAlert('alert-delete', 'Vui lòng nhập ID', 'error');
+  if (!confirm(`Bạn có chắc muốn xóa sách ID=${id}?`)) return;
+  try {
+    const res = await fetch(`${API}/books/${id}`, { method:'DELETE' });
+    const data = await res.json();
+    if (!res.ok) return showAlert('alert-delete', data.message, 'error');
+    showAlert('alert-delete', `✅ ${data.message}`, 'success');
+    document.getElementById('delete-result').innerHTML =
+      `<div class="code-block" style="margin-top:.75rem">${formatJSON(data)}</div>`;
+  } catch (e) {
+    showAlert('alert-delete', e.message, 'error');
+  }
+}
+
+// ── Stats ────────────────────────────────────────────────
+async function fetchStats() {
+  try {
+    const res = await fetch(`${API}/books/stats`);
+    const data = await res.json();
+    const el = document.getElementById('stats-result');
+    el.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;margin-bottom:1rem">
+        <div style="background:#eff6ff;border-radius:8px;padding:1rem;text-align:center">
+          <div style="font-size:2rem;font-weight:700;color:var(--primary)">${data.total_books}</div>
+          <div style="font-size:.8rem;color:var(--text-muted)">Tổng sách</div>
+        </div>
+        <div style="background:#f0fdf4;border-radius:8px;padding:1rem;text-align:center">
+          <div style="font-size:2rem;font-weight:700;color:var(--success)">${data.available}</div>
+          <div style="font-size:.8rem;color:var(--text-muted)">Có sẵn</div>
+        </div>
+        <div style="background:#fef2f2;border-radius:8px;padding:1rem;text-align:center">
+          <div style="font-size:2rem;font-weight:700;color:var(--danger)">${data.borrowed}</div>
+          <div style="font-size:.8rem;color:var(--text-muted)">Đang mượn</div>
+        </div>
+        <div style="background:#fef9c3;border-radius:8px;padding:1rem;text-align:center">
+          <div style="font-size:2rem;font-weight:700;color:#92400e">${data.average_rating}</div>
+          <div style="font-size:.8rem;color:var(--text-muted)">Rating TB</div>
+        </div>
+      </div>
+      <div class="code-block">${formatJSON(data)}</div>`;
+  } catch(e) { document.getElementById('stats-result').textContent = 'Lỗi: ' + e.message; }
+}
+
+// ── Genres ───────────────────────────────────────────────
+async function fetchGenres() {
+  try {
+    const res = await fetch(`${API}/books/genres`);
+    const data = await res.json();
+    const tags = data.genres.map(g =>
+      `<span style="display:inline-block;background:#dbeafe;color:#1e40af;padding:.3rem .75rem;border-radius:999px;font-size:.85rem;margin:.2rem">${g}</span>`
+    ).join('');
+    document.getElementById('genres-result').innerHTML =
+      `<div style="margin-bottom:1rem">${tags}</div><div class="code-block">${formatJSON(data)}</div>`;
+  } catch(e) { document.getElementById('genres-result').textContent = 'Lỗi: ' + e.message; }
+}
+
+// ── Init ─────────────────────────────────────────────────
+window.onload = () => fetchBooks('page');
+</script>
+</body>
+</html>
