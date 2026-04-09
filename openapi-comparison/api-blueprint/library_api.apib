@@ -1,0 +1,213 @@
+FORMAT: 1A
+HOST: http://localhost:8001/api/v1
+
+# Library Management API
+
+API quản lý thư viện — cho phép thực hiện CRUD trên sách và thành viên.
+
+# Group Books
+
+## Books Collection [/books]
+
+### Lấy danh sách sách [GET /books{?page,limit,search,genre}]
+
++ Parameters
+    + page (number, optional) - Số trang
+        + Default: `1`
+    + limit (number, optional) - Số lượng mỗi trang
+        + Default: `10`
+    + search (string, optional) - Tìm theo tiêu đề hoặc tác giả
+    + genre (enum[string], optional) - Lọc theo thể loại
+        + Members
+            + `fiction`
+            + `non-fiction`
+            + `science`
+            + `history`
+            + `technology`
+            + `children`
+
++ Response 200 (application/json)
+
+        {
+            "total": 2,
+            "page": 1,
+            "limit": 10,
+            "data": [
+                {
+                    "id": 1,
+                    "title": "Nhà Giả Kim",
+                    "author": "Paulo Coelho",
+                    "genre": "fiction",
+                    "price": 85000,
+                    "available": true
+                },
+                {
+                    "id": 2,
+                    "title": "Đắc Nhân Tâm",
+                    "author": "Dale Carnegie",
+                    "genre": "non-fiction",
+                    "price": 95000,
+                    "available": true
+                }
+            ]
+        }
+
+### Thêm sách mới [POST]
+
++ Request (application/json)
+
+        {
+            "title": "Clean Code",
+            "author": "Robert C. Martin",
+            "isbn": "9780132350884",
+            "genre": "technology",
+            "price": 320000,
+            "published_year": 2008,
+            "available": true
+        }
+
++ Response 201 (application/json)
+
+        {
+            "data": {
+                "id": 3,
+                "title": "Clean Code",
+                "author": "Robert C. Martin",
+                "isbn": "9780132350884",
+                "genre": "technology",
+                "price": 320000,
+                "published_year": 2008,
+                "available": true,
+                "created_at": "2024-01-15T08:30:00Z"
+            }
+        }
+
++ Response 400 (application/json)
+
+        { "error": "BAD_REQUEST", "message": "Trường 'title' là bắt buộc." }
+
++ Response 409 (application/json)
+
+        { "error": "CONFLICT", "message": "ISBN đã tồn tại." }
+
+## Book [/books/{id}]
+
++ Parameters
+    + id (number, required) - ID của sách
+
+### Lấy thông tin một sách [GET]
+
++ Response 200 (application/json)
+
+        {
+            "data": {
+                "id": 1,
+                "title": "Nhà Giả Kim",
+                "author": "Paulo Coelho",
+                "genre": "fiction",
+                "price": 85000,
+                "available": true
+            }
+        }
+
++ Response 404 (application/json)
+
+        { "error": "NOT_FOUND", "message": "Không tìm thấy sách." }
+
+### Cập nhật sách [PUT]
+
++ Request (application/json)
+
+        {
+            "title": "Clean Code (Updated)",
+            "author": "Robert C. Martin",
+            "genre": "technology",
+            "price": 350000,
+            "available": true
+        }
+
++ Response 200 (application/json)
+
+        { "data": { "id": 3, "title": "Clean Code (Updated)" } }
+
++ Response 404 (application/json)
+
+        { "error": "NOT_FOUND", "message": "Không tìm thấy sách." }
+
+### Xoá sách [DELETE]
+
++ Response 200 (application/json)
+
+        { "message": "Sách đã được xoá thành công." }
+
++ Response 404 (application/json)
+
+        { "error": "NOT_FOUND", "message": "Không tìm thấy sách." }
+
+# Group Members
+
+## Members Collection [/members]
+
+### Lấy danh sách thành viên [GET]
+
++ Response 200 (application/json)
+
+        {
+            "total": 1,
+            "data": [
+                {
+                    "id": 1,
+                    "name": "Nguyễn Văn A",
+                    "email": "nguyenvana@email.com",
+                    "joined_date": "2024-01-01"
+                }
+            ]
+        }
+
+### Đăng ký thành viên mới [POST]
+
++ Request (application/json)
+
+        {
+            "name": "Nguyễn Văn B",
+            "email": "nguyenvanb@email.com"
+        }
+
++ Response 201 (application/json)
+
+        {
+            "data": {
+                "id": 2,
+                "name": "Nguyễn Văn B",
+                "email": "nguyenvanb@email.com",
+                "joined_date": "2024-06-20"
+            }
+        }
+
+# Data Structures
+
+## Book (object)
++ id: 1 (number, required)
++ title: `Clean Code` (string, required)
++ author: `Robert C. Martin` (string, required)
++ isbn: `9780132350884` (string, optional)
++ genre: `technology` (string, required)
++ price: 320000 (number, required)
++ published_year: 2008 (number, optional)
++ description: `Mô tả sách` (string, optional)
++ available: true (boolean, required)
++ created_at: `2024-01-15T08:30:00Z` (string, optional)
+
+## BookCreate (object)
++ title: `Clean Code` (string, required)
++ author: `Robert C. Martin` (string, required)
++ isbn: `9780132350884` (string, optional)
++ genre: `technology` (string, required)
++ price: 320000 (number, required)
++ published_year: 2008 (number, optional)
++ description: `Mô tả sách` (string, optional)
++ available: true (boolean, optional)
+
+## Error (object)
++ error: `NOT_FOUND` (string, required)
++ message: `Không tìm thấy tài nguyên` (string, required)

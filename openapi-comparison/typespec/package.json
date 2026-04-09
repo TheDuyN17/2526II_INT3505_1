@@ -1,0 +1,11 @@
+{
+  "name": "typespec-library-api",
+  "version": "1.0.0",
+  "description": "TypeSpec Library Management API",
+  "private": true,
+  "dependencies": {
+    "@typespec/compiler": "^0.62.0",
+    "@typespec/http": "^0.62.0",
+    "@typespec/openapi3": "^0.62.0"
+  }
+}

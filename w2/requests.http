@@ -1,0 +1,489 @@
+# =============================================================================
+# REST API + JWT Authentication Demo — Buổi 2
+# =============================================================================
+# File: requests.http (VS Code REST Client extension)
+# Server: http://localhost:3000
+# Swagger UI: http://localhost:3000/api-docs
+#
+# HTTP Methods: GET, POST, PUT, PATCH, DELETE, HEAD
+# Status codes: 200, 201, 204, 304, 400, 401, 403, 404, 409, 429, 500
+# 6 REST Principles: Client-Server, Stateless(JWT), Cacheable, Uniform Interface,
+#                    Layered System, Code on Demand
+#
+# Cách dùng:
+#   1. Chạy server: cd w2 && npm start
+#   2. Cài extension "REST Client" (humao.rest-client) trong VS Code
+#   3. Click "Send Request" phía trên mỗi request
+#   4. Sau khi login, copy token → thay vào @adminToken / @userToken bên dưới
+# =============================================================================
+
+@baseUrl = http://localhost:3000
+
+# Sau khi login, paste token vào đây:
+@adminToken = PASTE_ADMIN_TOKEN_HERE
+@userToken  = PASTE_USER_TOKEN_HERE
+
+# Refresh tokens (paste sau khi login):
+@adminRefreshToken = PASTE_ADMIN_REFRESH_TOKEN_HERE
+
+
+# =============================================================================
+# SYSTEM — Health Check
+# =============================================================================
+
+### [GET 200] Health check — danh sách tất cả endpoints và REST principles
+GET {{baseUrl}}/health
+Accept: application/json
+
+
+# =============================================================================
+# AUTH ENDPOINTS
+# =============================================================================
+
+### [POST 201] Đăng ký tài khoản mới — 201 Created + JWT
+# Tình huống: User mới muốn tạo tài khoản
+# Status: 201 Created + Location header
+POST {{baseUrl}}/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "name": "Nguyễn Thị X",
+  "email": "x@example.com",
+  "password": "secret123"
+}
+
+###
+
+### [POST 409] Đăng ký email trùng — 409 Conflict
+# Status: 409 Conflict — Xung đột dữ liệu
+POST {{baseUrl}}/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "name": "Trùng Email",
+  "email": "a@example.com",
+  "password": "secret123"
+}
+
+###
+
+### [POST 400] Đăng ký thiếu field — 400 Bad Request
+# Status: 400 Bad Request — Thiếu password
+POST {{baseUrl}}/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "name": "Thiếu Password",
+  "email": "missing@example.com"
+}
+
+###
+
+### [POST 200] Đăng nhập Admin — nhận JWT token (STATELESS V3)
+# STATELESS: Server KHÔNG lưu session — token tự chứa user_id, email, role
+# Sau khi chạy, copy token từ response → paste vào @adminToken ở trên
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "a@example.com",
+  "password": "admin123"
+}
+
+###
+
+### [POST 200] Đăng nhập User thường
+# Sau khi chạy, copy token → paste vào @userToken ở trên
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "b@example.com",
+  "password": "user123"
+}
+
+###
+
+### [POST 401] Đăng nhập sai password — 401 Unauthorized
+# 401: Chưa xác thực — "Bạn là ai?"
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "a@example.com",
+  "password": "wrong-password"
+}
+
+###
+
+### [POST 400] Đăng nhập thiếu field — 400 Bad Request
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "a@example.com"
+}
+
+###
+
+### [POST 200] Refresh token — lấy access token mới (Token Rotation)
+# Refresh token cũ bị thu hồi ngay, nhận cặp token mới
+POST {{baseUrl}}/api/v1/auth/refresh
+Content-Type: application/json
+
+{
+  "refresh_token": "{{adminRefreshToken}}"
+}
+
+###
+
+### [POST 401] Refresh token không hợp lệ — 401 Unauthorized
+POST {{baseUrl}}/api/v1/auth/refresh
+Content-Type: application/json
+
+{
+  "refresh_token": "invalid.refresh.token"
+}
+
+###
+
+### [GET 200] Xem profile từ JWT (STATELESS) — cacheable
+# STATELESS: Server decode token → biết ngay user là ai, không cần session
+# CACHEABLE: Trả ETag, lần sau gửi If-None-Match → 304 nếu chưa đổi
+GET {{baseUrl}}/api/v1/auth/me
+Authorization: Bearer {{adminToken}}
+
+###
+
+### [GET 401] Xem profile không có token — 401 Unauthorized
+GET {{baseUrl}}/api/v1/auth/me
+
+###
+
+### [POST 200] Đăng xuất — revoke refresh token
+POST {{baseUrl}}/api/v1/auth/logout
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "refresh_token": "{{adminRefreshToken}}"
+}
+
+###
+
+
+# =============================================================================
+# USERS — HTTP Methods: HEAD, GET, POST, PUT, PATCH, DELETE
+# =============================================================================
+
+### [HEAD 200] Metadata — không có body, chỉ có headers
+# HTTP Method: HEAD — kiểm tra X-Total-Count và ETag mà không download data
+# Uniform Interface (V2): HEAD = GET nhưng không có body
+HEAD {{baseUrl}}/api/v1/users
+Authorization: Bearer {{adminToken}}
+
+###
+
+### [GET 200] Danh sách users — paginated, cacheable (Cacheable V4)
+# Cache-Control: max-age=60 — client cache 60 giây
+# ETag: hash data — dùng If-None-Match ở request tiếp theo để check 304
+# HATEOAS: response có _links pagination (Uniform Interface V2)
+GET {{baseUrl}}/api/v1/users
+Authorization: Bearer {{adminToken}}
+
+###
+
+### [GET 200] Danh sách users — với pagination
+GET {{baseUrl}}/api/v1/users?page=1&limit=2
+Authorization: Bearer {{adminToken}}
+
+###
+
+### [GET 200] Danh sách users — filter theo role=admin
+GET {{baseUrl}}/api/v1/users?role=admin
+Authorization: Bearer {{adminToken}}
+
+###
+
+### [GET 200] Danh sách users — search theo tên
+GET {{baseUrl}}/api/v1/users?search=Nguyễn
+Authorization: Bearer {{adminToken}}
+
+###
+
+### [GET 304] Conditional GET — 304 Not Modified (Cacheable V4)
+# Gửi ETag từ response trước → server trả 304 nếu data chưa đổi
+# KHÔNG có body trong response 304 → tiết kiệm bandwidth
+# Thay ETag thực tế từ response của request trên
+GET {{baseUrl}}/api/v1/users
+Authorization: Bearer {{adminToken}}
+If-None-Match: "PASTE_ETAG_FROM_PREVIOUS_RESPONSE"
+
+###
+
+### [GET 401] Gọi API không có token — 401 Unauthorized
+# 401 Unauthorized: "Bạn là ai?" — chưa có token
+GET {{baseUrl}}/api/v1/users
+
+###
+
+### [GET 200] Chi tiết 1 user — cacheable
+GET {{baseUrl}}/api/v1/users/1
+Authorization: Bearer {{adminToken}}
+
+###
+
+### [GET 200] Chi tiết user bằng token của chính user đó
+GET {{baseUrl}}/api/v1/users/2
+Authorization: Bearer {{userToken}}
+
+###
+
+### [GET 404] User không tồn tại — 404 Not Found
+GET {{baseUrl}}/api/v1/users/99999
+Authorization: Bearer {{adminToken}}
+
+###
+
+### [POST 201] Tạo user mới — Admin Only (Uniform Interface V2)
+# 201 Created + Location header (chuẩn REST cho POST tạo resource mới)
+# 403 nếu không phải admin
+POST {{baseUrl}}/api/v1/users
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Vũ Thị F",
+  "email": "f@example.com",
+  "password": "pass123",
+  "role": "user"
+}
+
+###
+
+### [POST 403] Tạo user — không phải admin → 403 Forbidden
+# 403 Forbidden: Đã xác thực nhưng không đủ quyền
+# SO SÁNH: 401 = "Bạn là ai?" | 403 = "Tôi biết bạn nhưng bạn không có quyền"
+POST {{baseUrl}}/api/v1/users
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "name": "Bị từ chối",
+  "email": "denied@example.com"
+}
+
+###
+
+### [POST 409] Tạo user email trùng — 409 Conflict
+POST {{baseUrl}}/api/v1/users
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Trùng Email",
+  "email": "a@example.com"
+}
+
+###
+
+### [POST 422] Tạo user email sai format — 422 Unprocessable Entity
+# 422: Cú pháp JSON đúng nhưng dữ liệu không hợp lệ về mặt logic
+POST {{baseUrl}}/api/v1/users
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Invalid Email",
+  "email": "not-an-email"
+}
+
+###
+
+### [PUT 200] Thay thế TOÀN BỘ user — Admin Only (Idempotent)
+# PUT: Phải gửi ĐẦY ĐỦ tất cả fields → thay thế hoàn toàn resource
+# Idempotent: Gọi N lần → kết quả giống nhau
+# KHÁC PATCH: PATCH chỉ cần gửi field muốn sửa
+PUT {{baseUrl}}/api/v1/users/2
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Trần Thị B (Updated)",
+  "email": "b_new@example.com",
+  "role": "user"
+}
+
+###
+
+### [PUT 422] PUT thiếu field — 422 Unprocessable Entity
+# Thiếu role → 422 (PUT yêu cầu đầy đủ fields)
+PUT {{baseUrl}}/api/v1/users/2
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Thiếu Role",
+  "email": "b@example.com"
+}
+
+###
+
+### [PATCH 200] Cập nhật MỘT PHẦN email — Admin sửa user khác
+# PATCH: Chỉ gửi field muốn sửa, các field khác giữ nguyên
+# KHÁC PUT: PUT cần đủ tất cả fields
+PATCH {{baseUrl}}/api/v1/users/3
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "email": "c_new@example.com"
+}
+
+###
+
+### [PATCH 200] User sửa profile của chính mình
+PATCH {{baseUrl}}/api/v1/users/2
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "name": "Trần Thị B (Tự sửa)"
+}
+
+###
+
+### [PATCH 403] User sửa profile người khác — 403 Forbidden
+# User thường không được sửa profile của user khác
+PATCH {{baseUrl}}/api/v1/users/1
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "name": "Không có quyền"
+}
+
+###
+
+### [PATCH 422] PATCH email sai format — 422 Unprocessable Entity
+PATCH {{baseUrl}}/api/v1/users/3
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "email": "not-valid-email"
+}
+
+###
+
+### [DELETE 204] Xóa user — Admin Only → 204 No Content
+# 204 No Content: Không có body trong response (thành công, không cần body)
+DELETE {{baseUrl}}/api/v1/users/5
+Authorization: Bearer {{adminToken}}
+
+###
+
+### [DELETE 403] Xóa user — không phải admin → 403 Forbidden
+DELETE {{baseUrl}}/api/v1/users/3
+Authorization: Bearer {{userToken}}
+
+###
+
+### [DELETE 404] Xóa user không tồn tại — 404 Not Found
+DELETE {{baseUrl}}/api/v1/users/99999
+Authorization: Bearer {{adminToken}}
+
+###
+
+
+# =============================================================================
+# HTTP STATUS CODES DEMO
+# =============================================================================
+
+### [200] OK — Request thành công
+GET {{baseUrl}}/api/v1/error-demo/200
+
+###
+
+### [400] Bad Request — Request sai cú pháp
+GET {{baseUrl}}/api/v1/error-demo/400
+
+###
+
+### [401] Unauthorized — Chưa xác thực
+GET {{baseUrl}}/api/v1/error-demo/401
+
+###
+
+### [403] Forbidden — Đã xác thực nhưng không đủ quyền
+GET {{baseUrl}}/api/v1/error-demo/403
+
+###
+
+### [404] Not Found — Resource không tồn tại
+GET {{baseUrl}}/api/v1/error-demo/404
+
+###
+
+### [409] Conflict — Xung đột dữ liệu
+GET {{baseUrl}}/api/v1/error-demo/409
+
+###
+
+### [429] Too Many Requests — Vượt rate limit (30 req/phút)
+GET {{baseUrl}}/api/v1/error-demo/429
+
+###
+
+### [500] Internal Server Error — Lỗi phía server
+GET {{baseUrl}}/api/v1/error-demo/500
+
+###
+
+### [502] Bad Gateway
+GET {{baseUrl}}/api/v1/error-demo/502
+
+###
+
+### [503] Service Unavailable
+GET {{baseUrl}}/api/v1/error-demo/503
+
+###
+
+### [504] Gateway Timeout
+GET {{baseUrl}}/api/v1/error-demo/504
+
+###
+
+
+# =============================================================================
+# TEST SCENARIOS — Luồng đầy đủ
+# =============================================================================
+
+# SCENARIO 1: Full Auth Flow
+# 1. POST /auth/register         → 201 + token
+# 2. POST /auth/login            → 200 + token + refresh_token
+# 3. GET  /auth/me               → 200 (user info từ token)
+# 4. GET  /users                 → 200 (với token)
+# 5. PATCH /users/self           → 200 (sửa profile)
+# 6. POST /auth/refresh          → 200 (token mới)
+# 7. POST /auth/logout           → 200 (revoke)
+# 8. GET  /users (token cũ)      → 401 (token còn hợp lệ nhưng refresh đã bị revoke)
+
+# SCENARIO 2: Admin vs User permissions
+# 1. Login admin  → 200 + adminToken
+# 2. Login user   → 200 + userToken
+# 3. POST /users (adminToken)    → 201 (tạo được)
+# 4. POST /users (userToken)     → 403 (không phải admin)
+# 5. DELETE /users/5 (admin)     → 204 (xóa được)
+# 6. DELETE /users/3 (user)      → 403 (bị từ chối)
+
+# SCENARIO 3: Cacheable (V4)
+# 1. GET /users                  → 200 + ETag: "abc123"
+# 2. GET /users (If-None-Match: "abc123") → 304 Not Modified (no body!)
+# 3. POST /users (tạo user mới)  → data thay đổi
+# 4. GET /users (If-None-Match: "abc123") → 200 (ETag khác vì data đã đổi)
+
+# SCENARIO 4: Rate Limiting (429)
+# Gọi > 30 requests/phút → 429 Too Many Requests
+# Response có Retry-After và X-RateLimit-* headers

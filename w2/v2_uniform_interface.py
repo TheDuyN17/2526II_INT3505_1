@@ -18,7 +18,7 @@ Nguyên tắc Uniform Interface gồm 4 ràng buộc:
 Chạy: python v2_uniform_interface.py
 """
 
-from flask import Flask, jsonify, request, url_for
+from flask import Flask, jsonify, request
 from datetime import datetime, timezone
 
 app = Flask(__name__)

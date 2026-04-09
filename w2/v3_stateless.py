@@ -23,7 +23,6 @@ from flask import Flask, jsonify, request, g
 from datetime import datetime, timezone, timedelta
 from functools import wraps
 import jwt
-import json
 
 app = Flask(__name__)
 

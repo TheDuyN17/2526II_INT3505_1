@@ -1,0 +1,722 @@
+openapi: 3.0.3
+info:
+  description: API quản lý thư viện — cho phép thực hiện CRUD trên sách và thành viên.
+  title: Library Management API
+  version: 1.0.0
+servers:
+- url: http://localhost:8001/api/v1
+tags:
+- name: Books
+- name: Members
+paths:
+  /books:
+    get:
+      description: ""
+      operationId: Lấy danh sách sách
+      parameters:
+      - description: Số trang
+        explode: true
+        in: query
+        name: page
+        required: false
+        schema:
+          default: 1
+          type: number
+        style: form
+      - description: Số lượng mỗi trang
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          default: 10
+          type: number
+        style: form
+      - description: Tìm theo tiêu đề hoặc tác giả
+        explode: true
+        in: query
+        name: search
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: Lọc theo thể loại
+        explode: true
+        in: query
+        name: genre
+        required: false
+        schema:
+          enum:
+          - fiction
+          - non-fiction
+          - science
+          - history
+          - technology
+          - children
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              example:
+                total: 2
+                page: 1
+                limit: 10
+                data:
+                - id: 1
+                  title: Nhà Giả Kim
+                  author: Paulo Coelho
+                  genre: fiction
+                  price: 85000
+                  available: true
+                - id: 2
+                  title: Đắc Nhân Tâm
+                  author: Dale Carnegie
+                  genre: non-fiction
+                  price: 95000
+                  available: true
+              schema:
+                $ref: "#/components/schemas/L_y_danh_s_ch_s_ch_200_response"
+          description: OK
+      summary: Lấy danh sách sách
+      tags:
+      - Books
+    post:
+      description: ""
+      operationId: Thêm sách mới
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            example:
+              title: Clean Code
+              author: Robert C. Martin
+              isbn: "9780132350884"
+              genre: technology
+              price: 320000
+              published_year: 2008
+              available: true
+            schema:
+              $ref: "#/components/schemas/Th_m_s_ch_m_i_request"
+      responses:
+        "201":
+          content:
+            application/json:
+              example:
+                data:
+                  id: 3
+                  title: Clean Code
+                  author: Robert C. Martin
+                  isbn: "9780132350884"
+                  genre: technology
+                  price: 320000
+                  published_year: 2008
+                  available: true
+                  created_at: 2024-01-15T08:30:00Z
+              schema:
+                $ref: "#/components/schemas/Th_m_s_ch_m_i_201_response"
+          description: Created
+        "400":
+          content:
+            application/json:
+              example:
+                error: BAD_REQUEST
+                message: Trường 'title' là bắt buộc.
+              schema:
+                $ref: "#/components/schemas/Th_m_s_ch_m_i_400_response"
+          description: Bad Request
+        "409":
+          content:
+            application/json:
+              example:
+                error: CONFLICT
+                message: ISBN đã tồn tại.
+              schema:
+                $ref: "#/components/schemas/Th_m_s_ch_m_i_400_response"
+          description: Conflict
+      summary: Thêm sách mới
+      tags:
+      - Books
+  /books/{id}:
+    delete:
+      description: ""
+      operationId: Xoá sách
+      parameters:
+      - description: ID của sách
+        explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: number
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              example:
+                message: Sách đã được xoá thành công.
+              schema:
+                $ref: "#/components/schemas/Xo__s_ch_200_response"
+          description: OK
+        "404":
+          content:
+            application/json:
+              example:
+                error: NOT_FOUND
+                message: Không tìm thấy sách.
+              schema:
+                $ref: "#/components/schemas/Th_m_s_ch_m_i_400_response"
+          description: Not Found
+      summary: Xoá sách
+      tags:
+      - Books
+    get:
+      description: ""
+      operationId: Lấy thông tin một sách
+      parameters:
+      - description: ID của sách
+        explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: number
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              example:
+                data:
+                  id: 1
+                  title: Nhà Giả Kim
+                  author: Paulo Coelho
+                  genre: fiction
+                  price: 85000
+                  available: true
+              schema:
+                $ref: "#/components/schemas/L_y_th_ng_tin_m_t_s_ch_200_response"
+          description: OK
+        "404":
+          content:
+            application/json:
+              example:
+                error: NOT_FOUND
+                message: Không tìm thấy sách.
+              schema:
+                $ref: "#/components/schemas/Th_m_s_ch_m_i_400_response"
+          description: Not Found
+      summary: Lấy thông tin một sách
+      tags:
+      - Books
+    put:
+      description: ""
+      operationId: Cập nhật sách
+      parameters:
+      - description: ID của sách
+        explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: number
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            example:
+              title: Clean Code (Updated)
+              author: Robert C. Martin
+              genre: technology
+              price: 350000
+              available: true
+            schema:
+              $ref: "#/components/schemas/C_p_nh_t_s_ch_request"
+      responses:
+        "200":
+          content:
+            application/json:
+              example:
+                data:
+                  id: 3
+                  title: Clean Code (Updated)
+              schema:
+                $ref: "#/components/schemas/C_p_nh_t_s_ch_200_response"
+          description: OK
+        "404":
+          content:
+            application/json:
+              example:
+                error: NOT_FOUND
+                message: Không tìm thấy sách.
+              schema:
+                $ref: "#/components/schemas/Th_m_s_ch_m_i_400_response"
+          description: Not Found
+      summary: Cập nhật sách
+      tags:
+      - Books
+  /members:
+    get:
+      description: ""
+      operationId: Lấy danh sách thành viên
+      parameters: []
+      responses:
+        "200":
+          content:
+            application/json:
+              example:
+                total: 1
+                data:
+                - id: 1
+                  name: Nguyễn Văn A
+                  email: nguyenvana@email.com
+                  joined_date: 2024-01-01
+              schema:
+                $ref: "#/components/schemas/L_y_danh_s_ch_th_nh_vi_n_200_response"
+          description: OK
+      summary: Lấy danh sách thành viên
+      tags:
+      - Members
+    post:
+      description: ""
+      operationId: Đăng ký thành viên mới
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            example:
+              name: Nguyễn Văn B
+              email: nguyenvanb@email.com
+            schema:
+              $ref: "#/components/schemas/__ng_k__th_nh_vi_n_m_i_request"
+      responses:
+        "201":
+          content:
+            application/json:
+              example:
+                data:
+                  id: 2
+                  name: Nguyễn Văn B
+                  email: nguyenvanb@email.com
+                  joined_date: 2024-06-20
+              schema:
+                $ref: "#/components/schemas/__ng_k__th_nh_vi_n_m_i_201_response"
+          description: Created
+      summary: Đăng ký thành viên mới
+      tags:
+      - Members
+components:
+  schemas:
+    Book:
+      properties:
+        id:
+          example: 1
+          type: number
+        title:
+          example: Clean Code
+          type: string
+        author:
+          example: Robert C. Martin
+          type: string
+        isbn:
+          example: "9780132350884"
+          type: string
+        genre:
+          example: technology
+          type: string
+        price:
+          example: 320000
+          type: number
+        published_year:
+          example: 2008
+          type: number
+        description:
+          example: Mô tả sách
+          type: string
+        available:
+          example: true
+          type: boolean
+        created_at:
+          example: 2024-01-15T08:30:00Z
+          type: string
+      required:
+      - author
+      - available
+      - genre
+      - id
+      - price
+      - title
+      type: object
+    BookCreate:
+      properties:
+        title:
+          example: Clean Code
+          type: string
+        author:
+          example: Robert C. Martin
+          type: string
+        isbn:
+          example: "9780132350884"
+          type: string
+        genre:
+          example: technology
+          type: string
+        price:
+          example: 320000
+          type: number
+        published_year:
+          example: 2008
+          type: number
+        description:
+          example: Mô tả sách
+          type: string
+        available:
+          example: true
+          type: boolean
+      required:
+      - author
+      - genre
+      - price
+      - title
+      type: object
+    Error:
+      properties:
+        error:
+          example: NOT_FOUND
+          type: string
+        message:
+          example: Không tìm thấy tài nguyên
+          type: string
+      required:
+      - error
+      - message
+      type: object
+    L_y_danh_s_ch_s_ch_200_response_data_inner:
+      example:
+        author: author
+        price: 5.637376656633329
+        genre: genre
+        available: true
+        id: 5.962133916683182
+        title: title
+      properties:
+        id:
+          title: id
+          type: number
+        title:
+          title: title
+          type: string
+        author:
+          title: author
+          type: string
+        genre:
+          title: genre
+          type: string
+        price:
+          title: price
+          type: number
+        available:
+          title: available
+          type: boolean
+      required:
+      - author
+      - available
+      - genre
+      - id
+      - price
+      - title
+      title: L_y_danh_s_ch_s_ch_200_response_data_inner
+      type: object
+    L_y_danh_s_ch_s_ch_200_response:
+      example:
+        total: 0.8008281904610115
+        data:
+        - author: author
+          price: 5.637376656633329
+          genre: genre
+          available: true
+          id: 5.962133916683182
+          title: title
+        - author: author
+          price: 5.637376656633329
+          genre: genre
+          available: true
+          id: 5.962133916683182
+          title: title
+        limit: 1.4658129805029452
+        page: 6.027456183070403
+      properties:
+        total:
+          title: total
+          type: number
+        page:
+          title: page
+          type: number
+        limit:
+          title: limit
+          type: number
+        data:
+          items:
+            $ref: "#/components/schemas/L_y_danh_s_ch_s_ch_200_response_data_inner"
+          title: data
+          type: array
+      title: L_y_danh_s_ch_s_ch_200_response
+      type: object
+    Th_m_s_ch_m_i_request:
+      properties:
+        title:
+          title: title
+          type: string
+        author:
+          title: author
+          type: string
+        isbn:
+          title: isbn
+          type: string
+        genre:
+          title: genre
+          type: string
+        price:
+          title: price
+          type: number
+        published_year:
+          title: published_year
+          type: number
+        available:
+          title: available
+          type: boolean
+      title: Th_m_s_ch_m_i_request
+      type: object
+    Th_m_s_ch_m_i_201_response_data:
+      example:
+        published_year: 1.4658129805029452
+        author: author
+        price: 6.027456183070403
+        isbn: isbn
+        genre: genre
+        available: true
+        created_at: created_at
+        id: 0.8008281904610115
+        title: title
+      properties:
+        id:
+          title: id
+          type: number
+        title:
+          title: title
+          type: string
+        author:
+          title: author
+          type: string
+        isbn:
+          title: isbn
+          type: string
+        genre:
+          title: genre
+          type: string
+        price:
+          title: price
+          type: number
+        published_year:
+          title: published_year
+          type: number
+        available:
+          title: available
+          type: boolean
+        created_at:
+          title: created_at
+          type: string
+      title: Th_m_s_ch_m_i_201_response_data
+      type: object
+    Th_m_s_ch_m_i_201_response:
+      example:
+        data:
+          published_year: 1.4658129805029452
+          author: author
+          price: 6.027456183070403
+          isbn: isbn
+          genre: genre
+          available: true
+          created_at: created_at
+          id: 0.8008281904610115
+          title: title
+      properties:
+        data:
+          $ref: "#/components/schemas/Th_m_s_ch_m_i_201_response_data"
+      title: Th_m_s_ch_m_i_201_response
+      type: object
+    Th_m_s_ch_m_i_400_response:
+      example:
+        error: error
+        message: message
+      properties:
+        error:
+          title: error
+          type: string
+        message:
+          title: message
+          type: string
+      title: Th_m_s_ch_m_i_400_response
+      type: object
+    L_y_th_ng_tin_m_t_s_ch_200_response_data:
+      example:
+        author: author
+        price: 6.027456183070403
+        genre: genre
+        available: true
+        id: 0.8008281904610115
+        title: title
+      properties:
+        id:
+          title: id
+          type: number
+        title:
+          title: title
+          type: string
+        author:
+          title: author
+          type: string
+        genre:
+          title: genre
+          type: string
+        price:
+          title: price
+          type: number
+        available:
+          title: available
+          type: boolean
+      title: L_y_th_ng_tin_m_t_s_ch_200_response_data
+      type: object
+    L_y_th_ng_tin_m_t_s_ch_200_response:
+      example:
+        data:
+          author: author
+          price: 6.027456183070403
+          genre: genre
+          available: true
+          id: 0.8008281904610115
+          title: title
+      properties:
+        data:
+          $ref: "#/components/schemas/L_y_th_ng_tin_m_t_s_ch_200_response_data"
+      title: L_y_th_ng_tin_m_t_s_ch_200_response
+      type: object
+    C_p_nh_t_s_ch_request:
+      properties:
+        title:
+          title: title
+          type: string
+        author:
+          title: author
+          type: string
+        genre:
+          title: genre
+          type: string
+        price:
+          title: price
+          type: number
+        available:
+          title: available
+          type: boolean
+      title: C_p_nh_t_s_ch_request
+      type: object
+    C_p_nh_t_s_ch_200_response_data:
+      example:
+        id: 0.8008281904610115
+        title: title
+      properties:
+        id:
+          title: id
+          type: number
+        title:
+          title: title
+          type: string
+      title: C_p_nh_t_s_ch_200_response_data
+      type: object
+    C_p_nh_t_s_ch_200_response:
+      example:
+        data:
+          id: 0.8008281904610115
+          title: title
+      properties:
+        data:
+          $ref: "#/components/schemas/C_p_nh_t_s_ch_200_response_data"
+      title: C_p_nh_t_s_ch_200_response
+      type: object
+    Xo__s_ch_200_response:
+      example:
+        message: message
+      properties:
+        message:
+          title: message
+          type: string
+      title: Xo__s_ch_200_response
+      type: object
+    L_y_danh_s_ch_th_nh_vi_n_200_response_data_inner:
+      example:
+        joined_date: joined_date
+        name: name
+        id: 6.027456183070403
+        email: email
+      properties:
+        id:
+          title: id
+          type: number
+        name:
+          title: name
+          type: string
+        email:
+          title: email
+          type: string
+        joined_date:
+          title: joined_date
+          type: string
+      title: L_y_danh_s_ch_th_nh_vi_n_200_response_data_inner
+      type: object
+    L_y_danh_s_ch_th_nh_vi_n_200_response:
+      example:
+        total: 0.8008281904610115
+        data:
+        - joined_date: joined_date
+          name: name
+          id: 6.027456183070403
+          email: email
+        - joined_date: joined_date
+          name: name
+          id: 6.027456183070403
+          email: email
+      properties:
+        total:
+          title: total
+          type: number
+        data:
+          items:
+            $ref: "#/components/schemas/L_y_danh_s_ch_th_nh_vi_n_200_response_data_inner"
+          title: data
+          type: array
+      title: L_y_danh_s_ch_th_nh_vi_n_200_response
+      type: object
+    __ng_k__th_nh_vi_n_m_i_request:
+      properties:
+        name:
+          title: name
+          type: string
+        email:
+          title: email
+          type: string
+      title: __ng_k__th_nh_vi_n_m_i_request
+      type: object
+    __ng_k__th_nh_vi_n_m_i_201_response:
+      example:
+        data:
+          joined_date: joined_date
+          name: name
+          id: 6.027456183070403
+          email: email
+      properties:
+        data:
+          $ref: "#/components/schemas/L_y_danh_s_ch_th_nh_vi_n_200_response_data_inner"
+      title: __ng_k__th_nh_vi_n_m_i_201_response
+      type: object

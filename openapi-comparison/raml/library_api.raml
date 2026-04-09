@@ -1,0 +1,396 @@
+#%RAML 1.0
+title: Library Management API
+description: API quản lý thư viện — CRUD sách và thành viên
+version: v1
+baseUri: http://localhost:8002/api/v1
+mediaType: application/json
+
+# ─── Types (tương đương components/schemas trong OpenAPI) ────────────────────
+
+types:
+
+  Genre:
+    type: string
+    enum: [fiction, non-fiction, science, history, technology, children]
+    description: Thể loại sách
+
+  Book:
+    type: object
+    description: Đối tượng sách đầy đủ
+    properties:
+      id:
+        type: integer
+        description: ID tự tăng do server sinh
+        required: true
+        example: 1
+      title:
+        type: string
+        description: Tiêu đề sách
+        required: true
+        example: Clean Code
+      author:
+        type: string
+        description: Tên tác giả
+        required: true
+        example: Robert C. Martin
+      isbn:
+        type: string
+        description: Mã ISBN (10 hoặc 13 chữ số)
+        required: false
+        example: "9780132350884"
+      genre:
+        type: Genre
+        required: true
+      price:
+        type: number
+        description: Giá bán (VNĐ)
+        minimum: 0
+        required: true
+        example: 320000
+      published_year:
+        type: integer
+        description: Năm xuất bản
+        minimum: 1000
+        maximum: 2100
+        required: false
+        example: 2008
+      description:
+        type: string
+        description: Mô tả ngắn về nội dung sách
+        required: false
+      available:
+        type: boolean
+        description: Còn hàng hay không
+        required: true
+        example: true
+      created_at:
+        type: datetime
+        description: Thời điểm tạo (ISO 8601)
+        required: false
+
+  BookCreate:
+    type: object
+    description: Dữ liệu cần thiết để tạo hoặc cập nhật sách
+    properties:
+      title:
+        type: string
+        minLength: 1
+        maxLength: 255
+        required: true
+        example: Clean Code
+      author:
+        type: string
+        minLength: 1
+        maxLength: 255
+        required: true
+        example: Robert C. Martin
+      isbn:
+        type: string
+        required: false
+        example: "9780132350884"
+      genre:
+        type: Genre
+        required: true
+      price:
+        type: number
+        minimum: 0
+        required: true
+        example: 320000
+      published_year:
+        type: integer
+        required: false
+        example: 2008
+      description:
+        type: string
+        maxLength: 1000
+        required: false
+      available:
+        type: boolean
+        required: false
+        default: true
+
+  Member:
+    type: object
+    properties:
+      id:
+        type: integer
+        required: true
+        example: 1
+      name:
+        type: string
+        required: true
+        example: Nguyễn Văn A
+      email:
+        type: string
+        required: true
+        example: nguyenvana@email.com
+      joined_date:
+        type: date-only
+        required: false
+
+  MemberCreate:
+    type: object
+    properties:
+      name:
+        type: string
+        required: true
+        example: Nguyễn Văn B
+      email:
+        type: string
+        required: true
+        example: nguyenvanb@email.com
+
+  Error:
+    type: object
+    properties:
+      error:
+        type: string
+        required: true
+        example: NOT_FOUND
+      message:
+        type: string
+        required: true
+        example: Không tìm thấy tài nguyên
+
+  BookListResponse:
+    type: object
+    properties:
+      total:
+        type: integer
+        example: 42
+      page:
+        type: integer
+        example: 1
+      limit:
+        type: integer
+        example: 10
+      data:
+        type: Book[]
+
+  BookResponse:
+    type: object
+    properties:
+      data:
+        type: Book
+
+# ─── Traits (tái sử dụng patterns) ──────────────────────────────────────────
+
+traits:
+
+  pageable:
+    queryParameters:
+      page:
+        type: integer
+        description: Số trang (bắt đầu từ 1)
+        default: 1
+        minimum: 1
+        required: false
+      limit:
+        type: integer
+        description: Số lượng mỗi trang
+        default: 10
+        minimum: 1
+        maximum: 100
+        required: false
+
+  searchable:
+    queryParameters:
+      search:
+        type: string
+        description: Tìm kiếm theo tiêu đề hoặc tên tác giả
+        required: false
+
+  notFound:
+    responses:
+      404:
+        description: Không tìm thấy tài nguyên
+        body:
+          application/json:
+            type: Error
+            example:
+              error: NOT_FOUND
+              message: Không tìm thấy tài nguyên với ID được cung cấp.
+
+  serverError:
+    responses:
+      500:
+        description: Lỗi máy chủ nội bộ
+        body:
+          application/json:
+            type: Error
+            example:
+              error: INTERNAL_SERVER_ERROR
+              message: Đã xảy ra lỗi. Vui lòng thử lại sau.
+
+# ─── Resources (Endpoints) ───────────────────────────────────────────────────
+
+/books:
+  description: Quản lý danh sách sách trong thư viện
+
+  get:
+    description: Lấy danh sách tất cả sách. Hỗ trợ phân trang và tìm kiếm.
+    is: [pageable, searchable, serverError]
+    queryParameters:
+      genre:
+        type: Genre
+        description: Lọc theo thể loại
+        required: false
+    responses:
+      200:
+        description: Danh sách sách thành công
+        body:
+          application/json:
+            type: BookListResponse
+            example:
+              total: 2
+              page: 1
+              limit: 10
+              data:
+                - id: 1
+                  title: Nhà Giả Kim
+                  author: Paulo Coelho
+                  genre: fiction
+                  price: 85000
+                  available: true
+                - id: 2
+                  title: Đắc Nhân Tâm
+                  author: Dale Carnegie
+                  genre: non-fiction
+                  price: 95000
+                  available: true
+
+  post:
+    description: Tạo một bản ghi sách mới trong hệ thống.
+    is: [serverError]
+    body:
+      application/json:
+        type: BookCreate
+        example:
+          title: Clean Code
+          author: Robert C. Martin
+          isbn: "9780132350884"
+          genre: technology
+          price: 320000
+          published_year: 2008
+          available: true
+    responses:
+      201:
+        description: Tạo sách thành công
+        body:
+          application/json:
+            type: BookResponse
+      400:
+        description: Dữ liệu đầu vào không hợp lệ
+        body:
+          application/json:
+            type: Error
+            example:
+              error: BAD_REQUEST
+              message: "Trường 'title' là bắt buộc."
+      409:
+        description: ISBN đã tồn tại
+        body:
+          application/json:
+            type: Error
+            example:
+              error: CONFLICT
+              message: Sách với ISBN này đã tồn tại.
+
+  /{id}:
+    description: Thao tác với một cuốn sách cụ thể
+    uriParameters:
+      id:
+        type: integer
+        description: ID của sách
+        example: 1
+
+    get:
+      description: Lấy thông tin chi tiết của một cuốn sách theo ID.
+      is: [notFound, serverError]
+      responses:
+        200:
+          description: Thông tin sách
+          body:
+            application/json:
+              type: BookResponse
+
+    put:
+      description: Cập nhật toàn bộ thông tin của một cuốn sách.
+      is: [notFound, serverError]
+      body:
+        application/json:
+          type: BookCreate
+          example:
+            title: Clean Code (Updated)
+            author: Robert C. Martin
+            genre: technology
+            price: 350000
+            available: true
+      responses:
+        200:
+          description: Cập nhật thành công
+          body:
+            application/json:
+              type: BookResponse
+        400:
+          description: Dữ liệu không hợp lệ
+          body:
+            application/json:
+              type: Error
+
+    delete:
+      description: Xoá vĩnh viễn một cuốn sách khỏi hệ thống.
+      is: [notFound, serverError]
+      responses:
+        200:
+          description: Xoá thành công
+          body:
+            application/json:
+              example:
+                message: Sách đã được xoá thành công.
+
+/members:
+  description: Quản lý thành viên thư viện
+
+  get:
+    description: Lấy danh sách thành viên
+    is: [pageable, serverError]
+    responses:
+      200:
+        description: Danh sách thành viên
+        body:
+          application/json:
+            example:
+              total: 1
+              page: 1
+              limit: 10
+              data:
+                - id: 1
+                  name: Nguyễn Văn A
+                  email: nguyenvana@email.com
+                  joined_date: "2024-01-01"
+
+  post:
+    description: Đăng ký thành viên mới
+    body:
+      application/json:
+        type: MemberCreate
+        example:
+          name: Nguyễn Văn B
+          email: nguyenvanb@email.com
+    responses:
+      201:
+        description: Đăng ký thành công
+        body:
+          application/json:
+            example:
+              data:
+                id: 2
+                name: Nguyễn Văn B
+                email: nguyenvanb@email.com
+                joined_date: "2024-06-20"
+      400:
+        description: Dữ liệu không hợp lệ
+        body:
+          application/json:
+            type: Error

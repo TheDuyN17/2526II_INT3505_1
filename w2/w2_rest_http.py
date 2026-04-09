@@ -14,6 +14,7 @@ Kỹ năng cần làm được:
 """
 
 import json
+import base64
 from datetime import datetime, timezone
 
 
@@ -79,6 +80,99 @@ def print_rest_principles():
 
 
 # ============================================================================
+# PHẦN 1.5: JWT — JSON WEB TOKEN
+# ============================================================================
+
+JWT_EXPLAINED = {
+    "định_nghĩa": (
+        "JWT (JSON Web Token) là chuẩn mở RFC 7519 để truyền thông tin "
+        "dưới dạng JSON object được ký số. Server không lưu session — "
+        "mọi thông tin cần thiết nằm trong token."
+    ),
+    "cấu_trúc": "header.payload.signature  (3 phần ngăn cách bởi dấu '.')",
+    "phần": {
+        "header": {
+            "mô_tả": "Thuật toán ký và loại token",
+            "ví_dụ": {"alg": "HS256", "typ": "JWT"}
+        },
+        "payload": {
+            "mô_tả": "Claims — thông tin về user và token",
+            "ví_dụ": {
+                "sub": "42",           # subject (user id)
+                "name": "Duy Nguyễn",
+                "role": "admin",
+                "iat": 1710000000,     # issued at
+                "exp": 1710086400      # expires at (+24h)
+            }
+        },
+        "signature": {
+            "mô_tả": "HMACSHA256(base64(header) + '.' + base64(payload), secret)",
+            "mục_đích": "Đảm bảo token không bị giả mạo hoặc chỉnh sửa"
+        }
+    },
+    "liên_quan_REST": {
+        "Stateless": (
+            "JWT giúp đạt nguyên tắc Stateless — server không lưu session, "
+            "mỗi request tự mang đủ thông tin xác thực trong Authorization header."
+        ),
+        "Client-Server": (
+            "Client tự lưu JWT (localStorage / cookie), gửi kèm mỗi request. "
+            "Server chỉ verify chữ ký, không cần shared session store."
+        )
+    }
+}
+
+
+def decode_jwt_demo(token: str) -> dict:
+    """Giải mã phần payload của JWT (không verify signature — chỉ demo)."""
+    try:
+        parts = token.split(".")
+        if len(parts) != 3:
+            return {"error": "Token không hợp lệ"}
+        # Thêm padding nếu thiếu
+        payload_b64 = parts[1] + "=" * (-len(parts[1]) % 4)
+        payload = json.loads(base64.urlsafe_b64decode(payload_b64))
+        return payload
+    except Exception:
+        return {"error": "Không thể decode token"}
+
+
+def print_jwt_explained():
+    """In ra giải thích về JWT và quan hệ với REST."""
+    print("\n" + "=" * 70)
+    print("JWT — JSON WEB TOKEN")
+    print("=" * 70)
+
+    print(f"\n📌 Định nghĩa: {JWT_EXPLAINED['định_nghĩa']}")
+    print(f"\n📐 Cấu trúc:   {JWT_EXPLAINED['cấu_trúc']}")
+
+    print("\n─── Ba phần của JWT ───────────────────────────────────────────────")
+    for part_name, part_info in JWT_EXPLAINED["phần"].items():
+        print(f"\n  [{part_name.upper()}]")
+        print(f"  Mô tả: {part_info['mô_tả']}")
+        if "ví_dụ" in part_info:
+            print(f"  Ví dụ: {json.dumps(part_info['ví_dụ'], indent=10, ensure_ascii=False)}")
+        if "mục_đích" in part_info:
+            print(f"  Mục đích: {part_info['mục_đích']}")
+
+    print("\n─── JWT và REST Principles ────────────────────────────────────────")
+    for principle, explanation in JWT_EXPLAINED["liên_quan_REST"].items():
+        print(f"\n  ✅ {principle}:")
+        print(f"     {explanation}")
+
+    # Demo token thực tế
+    demo_token = (
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
+        ".eyJzdWIiOiI0MiIsIm5hbWUiOiJEdXkgTmd1eeG7hW4iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3MTAwMDAwMDAsImV4cCI6MTcxMDA4NjQwMH0"
+        ".SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+    )
+    print("\n─── Demo decode JWT payload ───────────────────────────────────────")
+    print(f"  Token: {demo_token[:60]}...")
+    payload = decode_jwt_demo(demo_token)
+    print(f"  Payload decoded: {json.dumps(payload, indent=4, ensure_ascii=False)}")
+
+
+# ============================================================================
 # PHẦN 2: THIẾT KẾ HTTP REQUEST CHO 5 TÌNH HUỐNG
 # ============================================================================
 
@@ -116,6 +210,99 @@ class HTTPResponse:
         if self.body:
             print()
             print(json.dumps(self.body, indent=2, ensure_ascii=False))
+
+
+def scenario_0_jwt_login():
+    """Tình huống 0: Đăng nhập và nhận JWT token."""
+    print("\n" + "=" * 70)
+    print("TÌNH HUỐNG 0: Đăng nhập — Nhận JWT Access Token")
+    print("Mục đích: Xác thực người dùng, server trả về JWT để dùng các request sau")
+    print("Method: POST — tạo 'session' (token), không idempotent")
+    print("=" * 70)
+
+    request = HTTPRequest(
+        method="POST",
+        url="/api/v1/auth/login",
+        headers={
+            "Host": "api.example.com",
+            "Content-Type": "application/json"
+        },
+        body={
+            "email": "duy@example.com",
+            "password": "secret123"
+        }
+    )
+
+    response = HTTPResponse(
+        status_code=200,
+        status_text="OK",
+        headers={
+            "Content-Type": "application/json",
+            "Cache-Control": "no-store"   # Token KHÔNG được cache
+        },
+        body={
+            "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0MiIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTcxMDA4NjQwMH0.abc123",
+            "token_type": "Bearer",
+            "expires_in": 86400,          # 24 giờ (giây)
+            "refresh_token": "dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4..."
+        }
+    )
+
+    print("\n📤 REQUEST:")
+    request.display()
+    print("\n📥 RESPONSE:")
+    response.display()
+    print("\n  💡 Sau bước này, client lưu access_token và gửi kèm")
+    print("     header 'Authorization: Bearer <token>' trong mọi request tiếp theo.")
+
+
+def scenario_0b_jwt_refresh():
+    """Tình huống 0b: Refresh token khi access token hết hạn."""
+    print("\n" + "=" * 70)
+    print("TÌNH HUỐNG 0b: Refresh JWT Token")
+    print("Mục đích: Lấy access_token mới khi token cũ hết hạn (exp)")
+    print("Method: POST /auth/refresh — dùng refresh_token để đổi lấy token mới")
+    print("=" * 70)
+
+    request = HTTPRequest(
+        method="POST",
+        url="/api/v1/auth/refresh",
+        headers={
+            "Host": "api.example.com",
+            "Content-Type": "application/json"
+        },
+        body={
+            "refresh_token": "dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4..."
+        }
+    )
+
+    response_ok = HTTPResponse(
+        status_code=200,
+        status_text="OK",
+        headers={"Content-Type": "application/json", "Cache-Control": "no-store"},
+        body={
+            "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.NEW_PAYLOAD.NEW_SIG",
+            "token_type": "Bearer",
+            "expires_in": 86400
+        }
+    )
+
+    response_expired = HTTPResponse(
+        status_code=401,
+        status_text="Unauthorized",
+        headers={"Content-Type": "application/json"},
+        body={
+            "error": "invalid_grant",
+            "message": "Refresh token đã hết hạn hoặc bị thu hồi. Vui lòng đăng nhập lại."
+        }
+    )
+
+    print("\n📤 REQUEST:")
+    request.display()
+    print("\n📥 RESPONSE (thành công — token mới):")
+    response_ok.display()
+    print("\n📥 RESPONSE (thất bại — refresh token hết hạn → redirect login):")
+    response_expired.display()
 
 
 def scenario_1_get_users():
@@ -591,12 +778,143 @@ def summarize_http_methods():
 
 
 # ============================================================================
+# PHẦN 7: ĐÁNH GIÁ RESTFUL CỦA API DÙNG JWT
+# ============================================================================
+
+def evaluate_jwt_api_restfulness():
+    """Đánh giá mức độ RESTful của một API cụ thể dùng JWT Auth."""
+    print("\n" + "=" * 70)
+    print("ĐÁNH GIÁ RESTFUL — API DÙNG JWT AUTHENTICATION")
+    print("=" * 70)
+
+    # API mẫu cần đánh giá
+    SAMPLE_API = {
+        "endpoints": [
+            ("POST", "/api/v1/auth/login",           "Đăng nhập, trả JWT"),
+            ("POST", "/api/v1/auth/refresh",          "Làm mới access token"),
+            ("GET",  "/api/v1/users?page=1&role=admin","Danh sách users"),
+            ("GET",  "/api/v1/users/42",              "Lấy user theo id"),
+            ("PATCH","/api/v1/users/42",              "Cập nhật email"),
+            ("PUT",  "/api/v1/users/42/profile",      "Thay toàn bộ profile"),
+            ("POST", "/api/v1/posts",                 "Tạo bài viết"),
+            ("DELETE","/api/v1/posts/156/comments/789","Xóa comment"),
+        ]
+    }
+
+    criteria = [
+        {
+            "nguyên_tắc": "1. Client-Server",
+            "điểm": "✅ ĐẠT",
+            "nhận_xét": (
+                "Frontend (React/Mobile) và Backend REST API tách biệt hoàn toàn. "
+                "JWT trả về cho client tự quản lý — server không cần biết client là gì."
+            )
+        },
+        {
+            "nguyên_tắc": "2. Stateless",
+            "điểm": "✅ ĐẠT",
+            "nhận_xét": (
+                "JWT mang đủ thông tin (sub, role, exp) trong payload. "
+                "Server chỉ verify chữ ký — không lưu session. "
+                "Mỗi request gửi kèm 'Authorization: Bearer <token>' là đủ để xử lý."
+            )
+        },
+        {
+            "nguyên_tắc": "3. Cacheable",
+            "điểm": "⚠️ MỘT PHẦN",
+            "nhận_xét": (
+                "GET /users dùng Cache-Control: max-age=60 — đúng. "
+                "POST /auth/login dùng Cache-Control: no-store — đúng (token không được cache). "
+                "Cần đảm bảo các endpoint mutation (POST/PUT/PATCH) không bị cache."
+            )
+        },
+        {
+            "nguyên_tắc": "4. Uniform Interface",
+            "điểm": "✅ ĐẠT",
+            "nhận_xét": (
+                "URI xác định resource rõ ràng (/users/42, /posts/156/comments/789). "
+                "HTTP methods đúng ngữ nghĩa (GET đọc, POST tạo, PATCH partial, DELETE xóa). "
+                "Response nhất quán có error message và status code đúng."
+            )
+        },
+        {
+            "nguyên_tắc": "5. Layered System",
+            "điểm": "✅ ĐẠT",
+            "nhận_xét": (
+                "JWT cho phép nhiều server xử lý request mà không cần shared session store. "
+                "API Gateway có thể verify JWT trước khi chuyển tiếp tới backend — "
+                "client không cần biết kiến trúc bên trong."
+            )
+        },
+        {
+            "nguyên_tắc": "6. HATEOAS (Level 3)",
+            "điểm": "❌ CHƯA ĐẠT",
+            "nhận_xét": (
+                "Response hiện tại không có '_links' chỉ ra action tiếp theo. "
+                "Ví dụ: GET /users/42 nên trả thêm "
+                "{'_links': {'update': 'PATCH /users/42', 'delete': 'DELETE /users/42'}}. "
+                "Hầu hết API thực tế dừng ở Level 2, HATEOAS vẫn hiếm."
+            )
+        },
+    ]
+
+    # In danh sách endpoints
+    print("\n─── API Endpoints được đánh giá ───────────────────────────────────")
+    print(f"\n  {'Method':<8} {'Endpoint':<40} {'Mô tả'}")
+    print(f"  {'─'*7} {'─'*39} {'─'*25}")
+    for method, endpoint, desc in SAMPLE_API["endpoints"]:
+        print(f"  {method:<8} {endpoint:<40} {desc}")
+
+    # In đánh giá từng tiêu chí
+    print("\n─── Đánh giá theo 6 nguyên tắc REST ──────────────────────────────")
+    passed = sum(1 for c in criteria if "ĐẠT" in c["điểm"] and "CHƯA" not in c["điểm"])
+    partial = sum(1 for c in criteria if "MỘT PHẦN" in c["điểm"])
+    failed = sum(1 for c in criteria if "CHƯA ĐẠT" in c["điểm"])
+
+    for c in criteria:
+        print(f"\n  {c['điểm']} {c['nguyên_tắc']}")
+        print(f"     {c['nhận_xét']}")
+
+    # Tổng kết
+    print("\n─── Tổng kết ──────────────────────────────────────────────────────")
+    print(f"\n  ✅ Đạt:      {passed}/6 tiêu chí")
+    print(f"  ⚠️  Một phần: {partial}/6 tiêu chí")
+    print(f"  ❌ Chưa đạt: {failed}/6 tiêu chí")
+
+    level = "Level 2 (HTTP Verbs + Resources)"
+    print(f"\n  📊 Mức độ RESTful: {level}")
+    print(f"     → API đạt chuẩn REST thực tế (Production-ready).")
+    print(f"     → Cải thiện: thêm _links vào response để đạt Level 3 (HATEOAS).")
+
+    # Lỗi phổ biến cần tránh
+    print("\n─── Lỗi thường gặp khi dùng JWT ───────────────────────────────────")
+    mistakes = [
+        ("❌ Lưu JWT trong localStorage",
+         "Dễ bị XSS đánh cắp → Nên dùng httpOnly cookie"),
+        ("❌ Không set exp trong payload",
+         "Token không bao giờ hết hạn → Rủi ro bảo mật nghiêm trọng"),
+        ("❌ Đưa thông tin nhạy cảm vào payload",
+         "Payload chỉ được base64 encode, ai cũng đọc được → Không lưu password"),
+        ("❌ Dùng GET /auth/logout để logout",
+         "JWT stateless, server không thể revoke → Dùng blacklist hoặc short exp"),
+        ("❌ Secret key quá đơn giản ('secret', '123456')",
+         "Dễ bị brute-force → Dùng key ngẫu nhiên ≥ 256-bit"),
+    ]
+    for mistake, fix in mistakes:
+        print(f"\n  {mistake}")
+        print(f"  → Khắc phục: {fix}")
+
+
+# ============================================================================
 # MAIN
 # ============================================================================
 
 if __name__ == "__main__":
     print_rest_principles()
+    print_jwt_explained()
 
+    scenario_0_jwt_login()
+    scenario_0b_jwt_refresh()
     scenario_1_get_users()
     scenario_2_update_email()
     scenario_3_create_post()
@@ -607,3 +925,4 @@ if __name__ == "__main__":
     compare_401_vs_403()
     evaluate_restfulness()
     summarize_http_methods()
+    evaluate_jwt_api_restfulness()
