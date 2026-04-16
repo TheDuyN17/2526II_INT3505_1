@@ -1,0 +1,8 @@
+# OpenAPI Generator Ignore
+# Files listed here are not overwritten on re-generation.
+# Custom business logic files — keep on regeneration:
+openapi_server/controllers/product_controller.py
+openapi_server/database/
+seed/
+docker-compose.yaml
+README.md
