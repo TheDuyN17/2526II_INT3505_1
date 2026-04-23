@@ -1,0 +1,312 @@
+{
+    "info": {
+        "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "name": "JSONPlaceholder API Tests",
+        "description": "Test suite cho 5 endpoints của JSONPlaceholder API.\nMethods: GET, POST, PUT, DELETE\nURL: https://jsonplaceholder.typicode.com",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "https://jsonplaceholder.typicode.com",
+            "type": "string",
+            "description": "URL gốc của API"
+        }
+    ],
+    "item": [
+        {
+            "name": "GET All Posts - Lấy danh sách posts",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test('Status code la 200', function () {",
+                            "    pm.response.to.have.status(200);",
+                            "});",
+                            "",
+                            "pm.test('Response time nho hon 500ms', function () {",
+                            "    pm.expect(pm.response.responseTime).to.be.below(500);",
+                            "});",
+                            "",
+                            "pm.test('Response la mang co 100 phan tu', function () {",
+                            "    var jsonData = pm.response.json();",
+                            "    pm.expect(jsonData).to.be.an('array');",
+                            "    pm.expect(jsonData.length).to.eql(100);",
+                            "});",
+                            "",
+                            "pm.test('Moi post co truong userId, id, title, body', function () {",
+                            "    var jsonData = pm.response.json();",
+                            "    pm.expect(jsonData[0]).to.have.property('userId');",
+                            "    pm.expect(jsonData[0]).to.have.property('id');",
+                            "    pm.expect(jsonData[0]).to.have.property('title');",
+                            "    pm.expect(jsonData[0]).to.have.property('body');",
+                            "});",
+                            "",
+                            "pm.test('Content-Type la application/json', function () {",
+                            "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                            "});"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Accept",
+                        "value": "application/json"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/posts",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["posts"]
+                },
+                "description": "GET /posts - Lấy toàn bộ danh sách bài viết.\nExpected: Mảng 100 objects, mỗi object có userId, id, title, body."
+            },
+            "response": []
+        },
+        {
+            "name": "GET Single Post - Lấy chi tiết 1 post",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test('Status code la 200', function () {",
+                            "    pm.response.to.have.status(200);",
+                            "});",
+                            "",
+                            "pm.test('Response time nho hon 500ms', function () {",
+                            "    pm.expect(pm.response.responseTime).to.be.below(500);",
+                            "});",
+                            "",
+                            "pm.test('Post tra ve co id bang 1', function () {",
+                            "    var jsonData = pm.response.json();",
+                            "    pm.expect(jsonData.id).to.eql(1);",
+                            "});",
+                            "",
+                            "pm.test('Cac truong co kieu du lieu dung', function () {",
+                            "    var jsonData = pm.response.json();",
+                            "    pm.expect(jsonData.userId).to.be.a('number');",
+                            "    pm.expect(jsonData.id).to.be.a('number');",
+                            "    pm.expect(jsonData.title).to.be.a('string');",
+                            "    pm.expect(jsonData.body).to.be.a('string');",
+                            "});",
+                            "",
+                            "pm.test('Title va body khong rong', function () {",
+                            "    var jsonData = pm.response.json();",
+                            "    pm.expect(jsonData.title.length).to.be.above(0);",
+                            "    pm.expect(jsonData.body.length).to.be.above(0);",
+                            "});"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Accept",
+                        "value": "application/json"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/posts/1",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["posts", "1"]
+                },
+                "description": "GET /posts/1 - Lấy chi tiết bài viết có ID=1.\nExpected: Object với userId, id=1, title, body."
+            },
+            "response": []
+        },
+        {
+            "name": "POST Create Post - Tạo post mới",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test('Status code la 201 Created', function () {",
+                            "    pm.response.to.have.status(201);",
+                            "});",
+                            "",
+                            "pm.test('Response time nho hon 500ms', function () {",
+                            "    pm.expect(pm.response.responseTime).to.be.below(500);",
+                            "});",
+                            "",
+                            "pm.test('Response co id cua post vua tao', function () {",
+                            "    var jsonData = pm.response.json();",
+                            "    pm.expect(jsonData).to.have.property('id');",
+                            "    pm.expect(jsonData.id).to.eql(101);",
+                            "});",
+                            "",
+                            "pm.test('Response phan chieu dung du lieu da gui', function () {",
+                            "    var jsonData = pm.response.json();",
+                            "    pm.expect(jsonData.title).to.eql('foo');",
+                            "    pm.expect(jsonData.body).to.eql('bar');",
+                            "    pm.expect(jsonData.userId).to.eql(1);",
+                            "});",
+                            "",
+                            "pm.test('Id la so nguyen duong', function () {",
+                            "    var jsonData = pm.response.json();",
+                            "    pm.expect(jsonData.id).to.be.a('number');",
+                            "    pm.expect(jsonData.id).to.be.above(0);",
+                            "});"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Accept",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"title\": \"foo\",\n    \"body\": \"bar\",\n    \"userId\": 1\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/posts",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["posts"]
+                },
+                "description": "POST /posts - Tạo bài viết mới.\nRequest body: title, body, userId.\nExpected: 201 Created, response có id=101 (JSONPlaceholder mock)."
+            },
+            "response": []
+        },
+        {
+            "name": "PUT Update Post - Cập nhật toàn bộ post",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test('Status code la 200', function () {",
+                            "    pm.response.to.have.status(200);",
+                            "});",
+                            "",
+                            "pm.test('Response time nho hon 500ms', function () {",
+                            "    pm.expect(pm.response.responseTime).to.be.below(500);",
+                            "});",
+                            "",
+                            "pm.test('Title da duoc cap nhat', function () {",
+                            "    var jsonData = pm.response.json();",
+                            "    pm.expect(jsonData.title).to.eql('foo updated');",
+                            "});",
+                            "",
+                            "pm.test('ID trong response la 1', function () {",
+                            "    var jsonData = pm.response.json();",
+                            "    pm.expect(jsonData.id).to.eql(1);",
+                            "});",
+                            "",
+                            "pm.test('Response co du 4 truong bat buoc', function () {",
+                            "    var jsonData = pm.response.json();",
+                            "    pm.expect(jsonData).to.have.property('id');",
+                            "    pm.expect(jsonData).to.have.property('userId');",
+                            "    pm.expect(jsonData).to.have.property('title');",
+                            "    pm.expect(jsonData).to.have.property('body');",
+                            "});"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "PUT",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Accept",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"id\": 1,\n    \"title\": \"foo updated\",\n    \"body\": \"bar updated\",\n    \"userId\": 1\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/posts/1",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["posts", "1"]
+                },
+                "description": "PUT /posts/1 - Cập nhật TOÀN BỘ bài viết ID=1.\nPUT thay thế hoàn toàn resource, phải gửi đủ tất cả các trường.\nExpected: 200 OK, body phản chiếu dữ liệu đã gửi."
+            },
+            "response": []
+        },
+        {
+            "name": "DELETE Post - Xóa post",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test('Status code la 200', function () {",
+                            "    pm.response.to.have.status(200);",
+                            "});",
+                            "",
+                            "pm.test('Response time nho hon 500ms', function () {",
+                            "    pm.expect(pm.response.responseTime).to.be.below(500);",
+                            "});",
+                            "",
+                            "pm.test('Response body la object rong', function () {",
+                            "    var jsonData = pm.response.json();",
+                            "    pm.expect(jsonData).to.be.an('object');",
+                            "    pm.expect(Object.keys(jsonData).length).to.eql(0);",
+                            "});",
+                            "",
+                            "pm.test('Response la JSON hop le', function () {",
+                            "    pm.response.to.be.json;",
+                            "});",
+                            "",
+                            "pm.test('Content-Type van la application/json', function () {",
+                            "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                            "});"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "DELETE",
+                "header": [
+                    {
+                        "key": "Accept",
+                        "value": "application/json"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/posts/1",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["posts", "1"]
+                },
+                "description": "DELETE /posts/1 - Xóa bài viết có ID=1.\nJSONPlaceholder là mock server, không xóa thật.\nExpected: 200 OK, body là {} (object rỗng)."
+            },
+            "response": []
+        }
+    ]
+}
